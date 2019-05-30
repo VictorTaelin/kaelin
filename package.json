@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cp src/* docs; webpack"
+    "build": "cp -r src/* docs; webpack"
   },
   "repository": {
     "type": "git",

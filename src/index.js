@@ -8,55 +8,6 @@ const add2 = ([ax,ay],[bx,by]) => [ax + bx, ay + by];
 // :: Direction ::
 // :::::::::::::::
 
-const Right = 0;
-const Down = 1;
-const Left = 2;
-const Up = 3;
-
-const dir_delta = (dir) => {
-  switch (dir) {
-    case Right : return [ 1,  0];
-    case Down  : return [ 0,  1];
-    case Left  : return [-1,  0];
-    case Up    : return [ 0, -1];
-  }
-};
-
-const swap = (game, pos_a, pos_b) => {
-  var a = get_thing(game, pos_a);
-  var b = get_thing(game, pos_b);
-  set_thing(game, pos_a, b);
-  set_thing(game, pos_b, a);
-  if (a.pid !== null) game.heroes[a.pid].pos = pos_b;
-  if (b.pid !== null) game.heroes[b.pid].pos = pos_a;
-};
-
-const get_active_pos = (game) => {
-  return game.heroes[game.turn % 10].pos;
-};
-
-const get_active_hero = (game) => {
-  return get_thing(game, get_active_pos(game));
-};
-
-const walk = (game, a_pos, a_dir) => {
-  var a_val = get_thing(game, a_pos);
-  if (a_val && a_val.walks) {
-    var b_pos = add2(a_pos, dir_delta(a_dir));
-    var b_val = get_thing(game, b_pos);
-    if (b_val && b_val.walkable) {
-      a_val.steps += 1;
-      console.log(a_val.steps);
-      swap(game, a_pos, b_pos);
-      if (a_val.steps >= a_val.speed) {
-        end_turn(game);
-      }
-      return true;
-    }
-  }
-  return false;
-};
-
 // :::::::::::
 // :: Floor ::
 // :::::::::::
@@ -73,6 +24,7 @@ const Void = () => ({
   walks: false,
   walkable: true,
   speed: 0,
+  dir: [1,0],
   hp: 0,
 });
 
@@ -82,6 +34,7 @@ const Wall = () => ({
   walks: false,
   walkable: false,
   speed: 0,
+  dir: [1,0],
   hp: 0,
 });
 
@@ -91,6 +44,7 @@ const Throne = () => ({
   walks: false,
   walkable: true,
   speed: 0,
+  dir: [1,0],
   hp: 0,
 });
 
@@ -100,17 +54,22 @@ const Guard = () => ({
   walks: true,
   walkable: false,
   speed: 0,
+  dir: [1,0],
   hp: 32,
 });
 
 const Hero = (pid) => ({
   pid: pid,
+  face: pid < 5 ? "right" : "left",
+  dir: pid < 5 ? [1,0] : [-1,0],
   color: "#809080",
   walks: true,
   walkable: false,
   speed: 4,
   hp: 32,
   steps: 0,
+  last_attack: 0,
+  last_step: 0,
 });
 
 // :::::::::
@@ -168,17 +127,68 @@ const act = (game, key) => {
     case "s":
     case "d":
     case "w":
-      walk(game, pos, ({a: Left, s: Down, d: Right, w: Up})[key]);
+      hero.dir = {a:[-1,0], s:[0,1], d:[1,0], w:[0,-1]}[key];
+      walk(game, pos);
+      break;
+    case "e":
+    case "q":
+    case "z":
+    case "x":
+    case "c":
+      hero.last_attack = Date.now() / 1000;
       break;
     case "Enter":
       end_turn(game);
       break;
   }
 };
+
 const get_floor = (game, pos) => game.map[pos[1]] && game.map[pos[1]][pos[0]] && game.map[pos[1]][pos[0]][0] || null;
 const get_thing = (game, pos) => game.map[pos[1]] && game.map[pos[1]][pos[0]] && game.map[pos[1]][pos[0]][1] || null;
 const set_floor = (game, pos, thing) => game.map[pos[1]][pos[0]][0] = thing;
 const set_thing = (game, pos, thing) => game.map[pos[1]][pos[0]][1] = thing;
+
+const swap = (game, pos_a, pos_b) => {
+  var a = get_thing(game, pos_a);
+  var b = get_thing(game, pos_b);
+  set_thing(game, pos_a, b);
+  set_thing(game, pos_b, a);
+  if (a.pid !== null) game.heroes[a.pid].pos = pos_b;
+  if (b.pid !== null) game.heroes[b.pid].pos = pos_a;
+};
+
+const get_active_pos = (game, inc = 0) => {
+  return game.heroes[(game.turn + (inc + 10)) % 10].pos;
+};
+
+const get_active_hero = (game, inc = 0) => {
+  return get_thing(game, get_active_pos(game, inc));
+};
+
+const walk = (game, a_pos) => {
+  var a_val = get_thing(game, a_pos);
+  if (a_val && a_val.walks) {
+    var b_pos = add2(a_pos, a_val.dir);
+    var b_val = get_thing(game, b_pos);
+    if (b_val && b_val.walkable) {
+      a_val.steps += 1;
+      a_val.last_step = Date.now() / 1000;
+      //console.log(a_val.steps);
+      swap(game, a_pos, b_pos);
+      if (a_val.steps >= a_val.speed) {
+        end_turn(game);
+      }
+      if (a_val.dir[0] > 0) {
+        a_val.face = "right";
+      } else if (a_val.dir[0] < 0) {
+        a_val.face = "left";
+      }
+      return true;
+    }
+  }
+  return false;
+};
+
 
 const default_map_data = [
 // |               ,               ;               .               |               ,               ;               ,               |
@@ -283,6 +293,74 @@ const Mouse = () => {
   return mouse;
 };
 
+const Image = (src, offset, flip) => {
+  var image = document.createElement("img");
+  image.src = "img/" + src;
+  image.onload = () => {
+    if (flip) offset[0] = - offset[0];
+    offset[0] -= image.width * 0.5;
+    offset[1] -= image.height * 0.5;
+  };
+  image.offset = offset;
+  return image;
+};
+
+
+const images = {
+  thief: {
+    right: [
+      Image("thief/frame_00r.gif", [-28,-6], 1),
+      Image("thief/frame_01r.gif", [-28,-6], 1),
+      Image("thief/frame_02r.gif", [-28,-6], 1),
+      Image("thief/frame_03r.gif", [-28,-6], 1),
+      Image("thief/frame_04r.gif", [-28,-6], 1),
+      Image("thief/frame_05r.gif", [-28,-6], 1),
+      Image("thief/frame_06r.gif", [-28,-6], 1),
+      Image("thief/frame_07r.gif", [-28,-6], 1),
+      Image("thief/frame_08r.gif", [-28,-6], 1),
+      Image("thief/frame_09r.gif", [-28,-6], 1),
+      Image("thief/frame_10r.gif", [-28,-6], 1),
+      Image("thief/frame_11r.gif", [-28,-6], 1),
+      Image("thief/frame_12r.gif", [-28,-6], 1),
+      Image("thief/frame_13r.gif", [-28,-6], 1),
+      Image("thief/frame_14r.gif", [-28,-6], 1),
+      Image("thief/frame_15r.gif", [-28,-6], 1),
+      Image("thief/frame_16r.gif", [-28,-6], 1),
+      Image("thief/frame_17r.gif", [-28,-6], 1),
+      Image("thief/frame_18r.gif", [-28,-6], 1),
+      Image("thief/frame_19r.gif", [-28,-6], 1),
+      Image("thief/frame_20r.gif", [-28,-6], 1),
+      Image("thief/frame_21r.gif", [-28,-6], 1),
+      Image("thief/frame_22r.gif", [-28,-6], 1),
+    ],
+    left: [
+      Image("thief/frame_00.gif", [-28,-6], 0),
+      Image("thief/frame_01.gif", [-28,-6], 0),
+      Image("thief/frame_02.gif", [-28,-6], 0),
+      Image("thief/frame_03.gif", [-28,-6], 0),
+      Image("thief/frame_04.gif", [-28,-6], 0),
+      Image("thief/frame_05.gif", [-28,-6], 0),
+      Image("thief/frame_06.gif", [-28,-6], 0),
+      Image("thief/frame_07.gif", [-28,-6], 0),
+      Image("thief/frame_08.gif", [-28,-6], 0),
+      Image("thief/frame_09.gif", [-28,-6], 0),
+      Image("thief/frame_10.gif", [-28,-6], 0),
+      Image("thief/frame_11.gif", [-28,-6], 0),
+      Image("thief/frame_12.gif", [-28,-6], 0),
+      Image("thief/frame_13.gif", [-28,-6], 0),
+      Image("thief/frame_14.gif", [-28,-6], 0),
+      Image("thief/frame_15.gif", [-28,-6], 0),
+      Image("thief/frame_16.gif", [-28,-6], 0),
+      Image("thief/frame_17.gif", [-28,-6], 0),
+      Image("thief/frame_18.gif", [-28,-6], 0),
+      Image("thief/frame_19.gif", [-28,-6], 0),
+      Image("thief/frame_20.gif", [-28,-6], 0),
+      Image("thief/frame_21.gif", [-28,-6], 0),
+      Image("thief/frame_22.gif", [-28,-6], 0),
+    ],
+  }
+};
+
 window.onload = () => {
   // Initialize canvas and defaults
   var canvas = document.createElement("canvas");
@@ -291,11 +369,12 @@ window.onload = () => {
   var H = canvas.height = window.innerHeight;
   canvas.style.margin = "0px";
   canvas.style.padding = "0px";
+  ctx.imageSmoothingEnabled = false;
   ctx.font = "10px Arial";
   ctx.textBaseline = "middle"; 
   ctx.textAlign = "center";
   document.body.appendChild(canvas);
-  document.body.style.background = "#404040";
+  document.body.style.background = 'url("img/grass.png")';
 
   // Game state
   var game = Game(default_map_data);
@@ -310,7 +389,8 @@ window.onload = () => {
   var unproject = ([x,y]) => [x + pos[0] - W * 0.5, y + pos[1] - H * 0.5];
   var key = Keyboard({down: key => move(key)});
   var mouse = Mouse();
-  var SIZ = 48;
+  var SIZ = 32;
+  var focus_active_hero = true;
   var pos = [0,SIZ*game.dim[1]*0.5];
 
   // Main loop
@@ -320,14 +400,27 @@ window.onload = () => {
     fps();
     var T = Date.now() / 1000;
 
-    // heroes position
+    // Walk animation
+    var walk_anim_duration = 0.5;
+    const walk_anim_pos = (thing, pos) => {
+      var x = pos[0] * SIZ;
+      var y = pos[1] * SIZ;
+      if (T - thing.last_step < walk_anim_duration) {
+        var s = (T - thing.last_step) / walk_anim_duration;
+        var d = thing.dir;
+        x -= (1 - s) * d[0] * SIZ;
+        y -= (1 - s) * d[1] * SIZ;
+      }
+      return [x,y];
+    };
+
+    // Camera position
     pos[0] += ((key.ArrowRight||0) - (key.ArrowLeft||0)) * 12;
     pos[1] += ((key.ArrowDown||0) - (key.ArrowUp||0)) * 12;
     var idx = [Math.floor(pos[0] / SIZ), Math.floor(pos[1] / SIZ)];
-    var ofs = [pos[0] % SIZ, pos[1] % SIZ];
     var scr = [Math.floor(W / SIZ * 0.5 + 2), Math.floor(H / SIZ * 0.5 + 2)]; // screen radius
 
-    // Camera movement
+    // Camera movement (mouse-based and arrows)
     if ( mouse[0] <     16
       || mouse[0] > W - 16
       || mouse[1] <     16
@@ -335,14 +428,27 @@ window.onload = () => {
       var dir = [mouse[0] - W * 0.5, mouse[1] - H * 0.5];
       var len = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
       var mov = [dir[0] / len * 32, dir[1] / len * 32];
+      focus_active_hero = false;
       pos[0] += mov[0];
       pos[1] += mov[1];
     }
-    if (key[" "]) {
+
+    // Focus camera on active hero
+    if (key[" "] || focus_active_hero) {
       var pid = game.turn % 10;
-      pos[0] = game.heroes[pid].pos[0] * SIZ;
-      pos[1] = game.heroes[pid].pos[1] * SIZ;
+      focus_active_hero = true;
+      // If the last active hero just moved, focus it for a while
+      var last_active_hero = get_active_hero(game, -1);
+      if (T - last_active_hero.last_step < walk_anim_duration) {
+        pos = walk_anim_pos(last_active_hero, get_active_pos(game, -1));
+      // Otherwise, focus the actual active hero
+      } else {
+        pos = walk_anim_pos(get_active_hero(game), get_active_pos(game));
+      }
     }
+
+    // Background
+    document.body.style["background-position"] = "right " + pos[0] + "px bottom " + pos[1] + "px";
 
     // Clears screen
     ctx.clearRect(0, 0, W, H);
@@ -356,24 +462,31 @@ window.onload = () => {
         var floor = get_floor(game, [i,j]);
 
         // Info
-        if (floor) {
-          ctx.strokeStyle = "#606060";
-          ctx.beginPath();
-          ctx.rect(x, y, SIZ, SIZ);
-          ctx.stroke();
-          ctx.closePath();
-          ctx.fillStyle = "#A0A0A0";
-          ctx.fillText(i, x + SIZ * 0.5, y + SIZ * 0.25);
-          ctx.fillText(j, x + SIZ * 0.5, y + SIZ * 0.75);
-        }
+        //if (floor) {
+          //ctx.strokeStyle = "rgba(0,0,0,0.15)";
+          //ctx.beginPath();
+          //ctx.rect(x, y, SIZ, SIZ);
+          //ctx.stroke();
+          //ctx.closePath();
+          //ctx.fillStyle = "rgba(0,0,0,0.4)";
+          //ctx.fillText(i, x + SIZ * 0.5, y + SIZ * 0.25);
+          //ctx.fillText(j, x + SIZ * 0.5, y + SIZ * 0.75);
+        //}
 
         // Thing
         if (thing && thing.color) {
-          ctx.fillStyle = thing.color;
-          ctx.beginPath();
-          ctx.rect(x, y, SIZ, SIZ);
-          ctx.fill();
-          ctx.closePath();
+          if (thing.pid !== null) {
+            var [x,y] = project(walk_anim_pos(thing, [i,j]));
+            var frame = T - thing.last_attack < 1.375 ? Math.floor(((T - thing.last_attack) * 16) % 22) : 0;
+            var image = images.thief[thing.face][frame];
+            ctx.drawImage(image, x + image.offset[0] + SIZ * 0.5, y + image.offset[1] + SIZ * 0.5);
+          } else {
+            ctx.fillStyle = thing.color;
+            ctx.beginPath();
+            ctx.rect(x, y, SIZ, SIZ);
+            ctx.fill();
+            ctx.closePath();
+          }
         }
       }
     }
