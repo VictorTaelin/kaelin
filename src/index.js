@@ -3,10 +3,7 @@
 // ::::::::::::
 
 const add2 = ([ax,ay],[bx,by]) => [ax + bx, ay + by];
-
-// :::::::::::::::
-// :: Direction ::
-// :::::::::::::::
+const floor2 = ([ax,ay]) => [Math.floor(ax), Math.floor(ay)];
 
 // :::::::::::
 // :: Floor ::
@@ -361,37 +358,79 @@ const images = {
   }
 };
 
-window.onload = () => {
-  // Initialize canvas and defaults
+function Canvas(width, height) {
   var canvas = document.createElement("canvas");
-  var ctx = canvas.getContext("2d");
-  var W = canvas.width = window.innerWidth;
-  var H = canvas.height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
   canvas.style.margin = "0px";
   canvas.style.padding = "0px";
-  ctx.imageSmoothingEnabled = false;
-  ctx.font = "10px Arial";
-  ctx.textBaseline = "middle"; 
-  ctx.textAlign = "center";
-  document.body.appendChild(canvas);
-  document.body.style.background = 'url("img/grass.png")';
 
+  var context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = false;
+  context.font = "10px Arial";
+  context.textBaseline = "middle"; 
+  context.textAlign = "center";
+
+  canvas.context = context;
+
+  return canvas;
+}
+
+window.onload = () => {
   // Game state
   var game = Game(default_map_data);
   var acts = [];
-  var move = (key) => {
-    acts.push(key);
-    act(game, key);
-  };
 
-  // Renderer state
-  var project  = ([x,y]) => [x - pos[0] + W * 0.5, y - pos[1] + H * 0.5];
-  var unproject = ([x,y]) => [x + pos[0] - W * 0.5, y + pos[1] - H * 0.5];
-  var key = Keyboard({down: key => move(key)});
-  var mouse = Mouse();
-  var SIZ = 32;
-  var focus_active_hero = true;
-  var pos = [0,SIZ*game.dim[1]*0.5];
+  // UI state
+  var screen_width  = window.innerWidth;
+  var screen_height = window.innerHeight;
+  var tile_size     = 32;
+  var canvas        = Canvas(screen_width, screen_height);
+  var key           = Keyboard({down: key => { acts.push(key); act(game, key); }});
+  var mouse         = Mouse();
+  var center_pos    = [2, 32];
+  var pos_to_coord  = ([i,j]) => [(i - center_pos[0]) * tile_size + screen_width * 0.5, (j - center_pos[1]) * tile_size + screen_height * 0.5];
+  var screen_rad    = [Math.floor(screen_width / tile_size * 0.5 + 2), Math.floor(screen_height / tile_size * 0.5 + 2)]; // in tiles
+  var focus_hero    = true;
+  document.body.style.background = 'url("img/grass.png")';
+  document.body.appendChild(canvas);
+
+  // Performs camera movements
+  const camera_movements = () => {
+    var pressing_arrow = key.ArrowRight || key.ArrowLeft || key.ArrowDown || key.ArrowUp;
+    var pushing_screen = mouse[0] < 16 || mouse[0] > screen_width - 16 || mouse[1] < 16 || mouse[1] > screen_height - 16;
+    var pressing_space = key[" "];
+    
+    // Manual movements
+    if (pressing_arrow || pushing_screen) {
+      focus_hero = false;
+      if (pressing_arrow) {
+        center_pos[0] += ((key.ArrowRight||0) - (key.ArrowLeft||0)) * 12 / tile_size;
+        center_pos[1] += ((key.ArrowDown||0) - (key.ArrowUp||0)) * 12 / tile_size;
+      } 
+      if (pushing_screen) {
+        var push_dir = [mouse[0] - screen_width * 0.5, mouse[1] - screen_height * 0.5];
+        var push_len = Math.sqrt(push_dir[0] * push_dir[0] + push_dir[1] * push_dir[1]);
+        var push_vec = [push_dir[0] / push_len, push_dir[1] / push_len];
+        center_pos[0] += push_vec[0];
+        center_pos[1] += push_vec[1];
+      }
+
+    // Focus active hero
+    } else if (pressing_space || focus_hero) {
+      focus_hero = true;
+      //var pid = game.turn % 10;
+      // If the last active hero just moved, focus it for a while
+      //var last_active_hero = get_active_hero(game, -1);
+      //if (T - last_active_hero.last_step < walk_anim_duration) {
+        //center_coord = walk_anim_pos(last_active_hero, get_active_pos(game, -1));
+      // Otherwise, focus the actual active hero
+      //} else {
+      //center_coord = walk_anim_pos(get_active_hero(game), get_active_pos(game));
+      //}
+      center_pos = [...get_active_pos(game)];
+    }
+  };
 
   // Main loop
   const render = () => {
@@ -400,144 +439,105 @@ window.onload = () => {
     fps();
     var T = Date.now() / 1000;
 
-    // Walk animation
-    var walk_anim_duration = 0.5;
-    const walk_anim_pos = (thing, pos) => {
-      var x = pos[0] * SIZ;
-      var y = pos[1] * SIZ;
-      if (T - thing.last_step < walk_anim_duration) {
-        var s = (T - thing.last_step) / walk_anim_duration;
-        var d = thing.dir;
-        x -= (1 - s) * d[0] * SIZ;
-        y -= (1 - s) * d[1] * SIZ;
-      }
-      return [x,y];
-    };
-
-    // Camera position
-    pos[0] += ((key.ArrowRight||0) - (key.ArrowLeft||0)) * 12;
-    pos[1] += ((key.ArrowDown||0) - (key.ArrowUp||0)) * 12;
-    var idx = [Math.floor(pos[0] / SIZ), Math.floor(pos[1] / SIZ)];
-    var scr = [Math.floor(W / SIZ * 0.5 + 2), Math.floor(H / SIZ * 0.5 + 2)]; // screen radius
-
-    // Camera movement (mouse-based and arrows)
-    if ( mouse[0] <     16
-      || mouse[0] > W - 16
-      || mouse[1] <     16
-      || mouse[1] > H - 16) {
-      var dir = [mouse[0] - W * 0.5, mouse[1] - H * 0.5];
-      var len = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
-      var mov = [dir[0] / len * 32, dir[1] / len * 32];
-      focus_active_hero = false;
-      pos[0] += mov[0];
-      pos[1] += mov[1];
-    }
-
-    // Focus camera on active hero
-    if (key[" "] || focus_active_hero) {
-      var pid = game.turn % 10;
-      focus_active_hero = true;
-      // If the last active hero just moved, focus it for a while
-      var last_active_hero = get_active_hero(game, -1);
-      if (T - last_active_hero.last_step < walk_anim_duration) {
-        pos = walk_anim_pos(last_active_hero, get_active_pos(game, -1));
-      // Otherwise, focus the actual active hero
-      } else {
-        pos = walk_anim_pos(get_active_hero(game), get_active_pos(game));
-      }
-    }
+    // User inputs
+    camera_movements();
+    var center_coord = pos_to_coord(center_pos);
 
     // Background
-    document.body.style["background-position"] = "right " + pos[0] + "px bottom " + pos[1] + "px";
+    document.body.style["background-position"] = "right " + center_coord[0] + "px bottom " + center_coord[1] + "px";
 
     // Clears screen
-    ctx.clearRect(0, 0, W, H);
+    canvas.context.clearRect(0, 0, screen_width, screen_height);
+
+    // Draws grid
+    for (var dj = -screen_rad[1]; dj <= screen_rad[1]; ++dj) {
+      for (var di = -screen_rad[0]; di <= screen_rad[0]; ++di) {
+        var [i,j] = [Math.floor(center_pos[0]) + di, Math.floor(center_pos[1]) + dj];
+        var [x,y] = pos_to_coord([i, j]);
+        var floor = get_floor(game, [i,j]);
+        if (floor) {
+          canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
+          canvas.context.beginPath();
+          canvas.context.rect(x, y, tile_size, tile_size);
+          canvas.context.stroke();
+          canvas.context.closePath();
+        }
+      }
+    }
 
     // Draws tiles
-    for (var dj = -scr[1]; dj <= scr[1]; ++dj) {
-      for (var di = -scr[0]; di <= scr[0]; ++di) {
-        var [i,j] = [idx[0] + di, idx[1] + dj];
-        var [x,y] = project([i * SIZ, j * SIZ]);
+    for (var dj = -screen_rad[1]; dj <= screen_rad[1]; ++dj) {
+      for (var di = -screen_rad[0]; di <= screen_rad[0]; ++di) {
+        var [i,j] = [Math.floor(center_pos[0]) + di, Math.floor(center_pos[1]) + dj];
+        var [x,y] = pos_to_coord([i, j]);
         var thing = get_thing(game, [i,j]);
         var floor = get_floor(game, [i,j]);
-
-        // Info
-        //if (floor) {
-          //ctx.strokeStyle = "rgba(0,0,0,0.15)";
-          //ctx.beginPath();
-          //ctx.rect(x, y, SIZ, SIZ);
-          //ctx.stroke();
-          //ctx.closePath();
-          //ctx.fillStyle = "rgba(0,0,0,0.4)";
-          //ctx.fillText(i, x + SIZ * 0.5, y + SIZ * 0.25);
-          //ctx.fillText(j, x + SIZ * 0.5, y + SIZ * 0.75);
-        //}
 
         // Thing
         if (thing && thing.color) {
           if (thing.pid !== null) {
-            var [x,y] = project(walk_anim_pos(thing, [i,j]));
+            //var [x,y] = project(walk_anim_pos(thing, [i,j]));
             var frame = T - thing.last_attack < 1.375 ? Math.floor(((T - thing.last_attack) * 16) % 22) : 0;
             var image = images.thief[thing.face][frame];
-            ctx.drawImage(image, x + image.offset[0] + SIZ * 0.5, y + image.offset[1] + SIZ * 0.5);
+            canvas.context.drawImage(image, x + image.offset[0] + tile_size * 0.5, y + image.offset[1] + tile_size * 0.5);
           } else {
-            ctx.fillStyle = thing.color;
-            ctx.beginPath();
-            ctx.rect(x, y, SIZ, SIZ);
-            ctx.fill();
-            ctx.closePath();
+            canvas.context.fillStyle = thing.color;
+            canvas.context.beginPath();
+            canvas.context.rect(x, y, tile_size, tile_size);
+            canvas.context.fill();
+            canvas.context.closePath();
           }
         }
       }
     }
 
     // Draws heroes
-    //ctx.strokeStyle = ctx.fillStyle = "#000000";
+    //canvas.context.strokeStyle = canvas.context.fillStyle = "#000000";
     //var [x,y] = add2(project(pos), [-4, -4]);
-    //ctx.beginPath();
-    //ctx.rect(x, y, 8, 8);
-    //ctx.fill();
-    //ctx.closePath();
+    //canvas.context.beginPath();
+    //canvas.context.rect(x, y, 8, 8);
+    //canvas.context.fill();
+    //canvas.context.closePath();
 
     // Draws minimap
-    ctx.strokeStyle = ctx.fillStyle = "rgba(128,128,128,0.5)";
-    ctx.beginPath();
-    ctx.rect(W - 128, H - 128, 128, 128);
-    ctx.fill();
-    ctx.closePath();
+    canvas.context.strokeStyle = canvas.context.fillStyle = "rgba(128,128,128,0.5)";
+    canvas.context.beginPath();
+    canvas.context.rect(screen_width - 128, screen_height - 128, 128, 128);
+    canvas.context.fill();
+    canvas.context.closePath();
 
     // Draws screen on minimap
-    ctx.beginPath();
-    ctx.fillStyle = "rgb(255,255,255,0.25)";
-    var X0 = Math.min(Math.max(W - 128 + (idx[0] - scr[0] - 0) * 2, W - 128), W);
-    var Y0 = Math.min(Math.max(H - 128 + (idx[1] - scr[1] - 0) * 2, H - 128), H);
-    var X1 = Math.min(Math.max(W - 128 + (idx[0] + scr[0] + 1) * 2, W - 128), W);
-    var Y1 = Math.min(Math.max(H - 128 + (idx[1] + scr[1] + 1) * 2, H - 128), H);
-    ctx.rect(X0, Y0, X1 - X0, Y1 - Y0);
-    ctx.fill();
-    ctx.closePath();
+    canvas.context.beginPath();
+    canvas.context.fillStyle = "rgb(255,255,255,0.25)";
+    var X0 = Math.min(Math.max(screen_width - 128 + (Math.floor(center_pos[0]) - screen_rad[0] - 0) * 2, screen_width - 128), screen_width);
+    var Y0 = Math.min(Math.max(screen_height - 128 + (Math.floor(center_pos[1]) - screen_rad[1] - 0) * 2, screen_height - 128), screen_height);
+    var X1 = Math.min(Math.max(screen_width - 128 + (Math.floor(center_pos[0]) + screen_rad[0] + 1) * 2, screen_width - 128), screen_width);
+    var Y1 = Math.min(Math.max(screen_height - 128 + (Math.floor(center_pos[1]) + screen_rad[1] + 1) * 2, screen_height - 128), screen_height);
+    canvas.context.rect(X0, Y0, X1 - X0, Y1 - Y0);
+    canvas.context.fill();
+    canvas.context.closePath();
 
     // Draws camera on minimap
-    //ctx.beginPath();
-    //ctx.fillStyle = "rgb(0,0,0)";
-    //ctx.rect(W - 128 + idx[0] * 2, H - 128 + idx[1] * 2, 2, 2);
-    //ctx.fill();
-    //ctx.closePath();
+    //canvas.context.beginPath();
+    //canvas.context.fillStyle = "rgb(0,0,0)";
+    //canvas.context.rect(screen_width - 128 + center_pos[0] * 2, screen_height - 128 + center_pos[1] * 2, 2, 2);
+    //canvas.context.fill();
+    //canvas.context.closePath();
 
     // Draws units on minimap
     for (var j = 0; j < game.dim[1]; ++j) {
       for (var i = 0; i < game.dim[1]; ++i) {
-        var [x,y] = [W - 128 + i * 2, H - 128 + j * 2];
+        var [x,y] = [screen_width - 128 + i * 2, screen_height - 128 + j * 2];
         var floor = get_floor(game, [i, j]);
         var thing = get_thing(game, [i, j]);
 
         // Thing
         if (thing && thing.color) {
-          ctx.fillStyle = thing.color;
-          ctx.beginPath();
-          ctx.rect(x, y, 2, 2);
-          ctx.fill();
-          ctx.closePath();
+          canvas.context.fillStyle = thing.color;
+          canvas.context.beginPath();
+          canvas.context.rect(x, y, 2, 2);
+          canvas.context.fill();
+          canvas.context.closePath();
         }
       }
     }
@@ -548,3 +548,18 @@ window.onload = () => {
 
   window.requestAnimationFrame(render);
 };
+
+
+// Walk animation
+//var walk_anim_duration = 0.25;
+//const walk_anim_pos = (thing, pos) => {
+  //var x = pos[0] * tile_size;
+  //var y = pos[1] * tile_size;
+  //if (T - thing.last_step < walk_anim_duration) {
+    //var s = (T - thing.last_step) / walk_anim_duration;
+    //var d = thing.dir;
+    //x -= (1 - s) * d[0] * tile_size;
+    //y -= (1 - s) * d[1] * tile_size;
+  //}
+  //return [x,y];
+//};
