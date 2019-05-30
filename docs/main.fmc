@@ -1,0 +1,35 @@
+def init      : [dpt] (dup fold = (dpt #[arr] (dup arr = arr #&(arr,arr))) #[init] (fold init))
+def update    : [dpt] (dup exec = (dpt #[cont] [path] [fn] (get &(path0,path1) = (cpy path) (get &(swap0,swap1) = (if {path0 % 2} &(&([x] x,[x] x),&([pair] (get &(a,b) = pair &(b,a)),[pair] (get &(a,b) = pair &(b,a))))) (cont {path1 / 2} [arr] (get &(a,b) = (swap0 arr) (get &(b,x) = (fn b) &((swap1 &(a,b)),x))))))) #[path] [f] [arr] (fst (exec [path] [fn] fn path [x] &((f x),0) arr)))
+def write     : [dpt] (dup exec = (dpt #[cont] [path] [fn] (get &(path0,path1) = (cpy path) (get &(swap0,swap1) = (if {path0 % 2} &(&([x] x,[x] x),&([pair] (get &(a,b) = pair &(b,a)),[pair] (get &(a,b) = pair &(b,a))))) (cont {path1 / 2} [arr] (get &(a,b) = (swap0 arr) (get &(b,x) = (fn b) &((swap1 &(a,b)),x))))))) #[path] [val] [arr] (fst (exec [path] [fn] fn path [x] &(val,0) arr)))
+def read      : [dpt] (dup exec = (dpt #[cont] [path] [fn] (get &(path0,path1) = (cpy path) (get &(swap0,swap1) = (if {path0 % 2} &(&([x] x,[x] x),&([pair] (get &(a,b) = pair &(b,a)),[pair] (get &(a,b) = pair &(b,a))))) (cont {path1 / 2} [arr] (get &(a,b) = (swap0 arr) (get &(b,x) = (fn b) &((swap1 &(a,b)),x))))))) #[path] [arr] (exec [path] [fn] fn path [x] (dup x = x &(#x,#x)) arr))
+def boxed_add : [x] [y] (dup x = x (dup y = y #{x + y}))
+def max: [t]
+  (t [a] [b]
+   get &(a1, a2) = cpy a 
+   get &(b1, b2) = cpy b
+   if {a1 > b1}
+   then: a2
+   else: b2
+  )
+
+def main:
+  let tup = [t] (t 9 8)
+  (max tup)
+
+def main:
+  let dpt  = ~16
+  dup init = (init dpt)
+
+  # dup arr    = (init ##0)
+    dup write  = (write dpt)
+    dup update = (update dpt)
+    dup read   = (read dpt)
+
+  # let add       = boxed_add
+    let arr       = (write 0 #10 arr)
+    let arr       = (write 1 #12 arr)
+    let arr       = (update 2 (add #8) arr)
+    get &(arr, a) = (read 0 arr)
+    get &(arr, b) = (read 1 arr)
+    get &(arr, c) = (read 2 arr)
+    &("arr[0] + arr[1] + arr[2]:", (add (add a b) c))

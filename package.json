@@ -1,0 +1,34 @@
+{
+  "name": "taelin",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "cp src/* docs; webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moonad/taelin.git"
+  },
+  "keywords": [
+    "taelin"
+  ],
+  "author": "Victor Maia",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/moonad/taelin/issues"
+  },
+  "homepage": "https://github.com/moonad/taelin#readme",
+  "devDependencies": {
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.2.3",
+    "raw-loader": "^2.0.0"
+  },
+  "dependencies": {
+    "formality-core": "^0.1.33",
+    "inferno": "^7.1.9",
+    "inferno-canvas-component-2": "^1.0.0",
+    "inferno-hyperscript": "^7.1.9"
+  }
+}
