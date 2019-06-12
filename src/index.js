@@ -57,8 +57,8 @@ const Guard = () => ({
 
 const Hero = (pid) => ({
   pid: pid,
-  face: pid < 5 ? "right" : "left",
-  dir: pid < 5 ? [1,0] : [-1,0],
+  face: pid < 4 ? "right" : "left",
+  dir: pid < 4 ? [1,0] : [-1,0],
   color: "#809080",
   walks: true,
   walkable: false,
@@ -98,8 +98,6 @@ const Game = (data) => {
           case "5" : heroes[5] = {pos}; return Hero(5);
           case "6" : heroes[6] = {pos}; return Hero(6);
           case "7" : heroes[7] = {pos}; return Hero(7);
-          case "8" : heroes[8] = {pos}; return Hero(8);
-          case "9" : heroes[9] = {pos}; return Hero(9);
           default  : return Void();
         }
       }
@@ -154,8 +152,8 @@ const swap = (game, pos_a, pos_b) => {
   if (b.pid !== null) game.heroes[b.pid].pos = pos_a;
 };
 
-const get_active_pos = (game, inc = 0) => {
-  return game.heroes[(game.turn + (inc + 10)) % 10].pos;
+const get_active_pos = (game) => {
+  return game.heroes[game.turn % 8].pos;
 };
 
 const get_active_hero = (game, inc = 0) => {
@@ -189,70 +187,38 @@ const walk = (game, a_pos) => {
 
 const default_map_data = [
 // |               ,               ;               .               |               ,               ;               ,               |
-  " X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//--------0
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 8
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//---- 16
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 24
-  " X X X X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X",
-  " X . . . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . . . X",
-  " X . . . X X X X X X X X X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X X X X X X . . . X",
-  " X . . . . . . . . . . . . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . . . . . . . . . . . . X",
-  " X . X G G G G G G G G X . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . X G G G G G G G G X . X",
-  " X . 0 . . . . . . . . X G X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X G X . . . . . . . . 5 . X",
-  " X X 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6 X X",
-  " X T 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7 T X",//-------- 32
-  " X X 3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8 X X",
-  " X . 4 . . . . . . . . X G X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X G X . . . . . . . . 9 . X",
-  " X . X G G G G G G G G X . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . X G G G G G G G G X . X",
-  " X . . . . . . . . . . . . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . . . . . . . . . . . . X",
-  " X . . . X X X X X X X X X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X X X X X X . . . X",
-  " X . . . X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X . . . X",
-  " X X X X X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 40
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//---- 48
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 56
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
-  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X T X",//--------0
+  " . . . . . . . . . . . . . . . . . . . . . . . . . X . . 7 6 . T",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5 X",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4 X",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . X",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . X . . . . . X",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . X X . . . X X",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 8
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//---- 16
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",//-- 24
+  " X X . . . X X . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " X . . . . . X . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " X . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " X 0 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " X 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " T . 2 3 . . X . . . . . . . . . . . . . . . . . . . . . . . . .",
+  " X T X X X X X . . . . . . . . . . . . . . . . . . . . . . . . .",
 ];                                                                                                                                  //-------- 64
 
 // :::::::::::::::
@@ -283,13 +249,6 @@ const Keyboard = (callbacks) => {
   return key;
 };
 
-const Mouse = () => {
-  var mouse = [window.innerWidth * 0.5, window.innerHeight * 0.5];
-  document.addEventListener("mousemove", e => { mouse[0] = e.pageX; mouse[1] = e.pageY; });
-  document.addEventListener("mouseout", e => { mouse[0] = e.pageX; mouse[1] = e.pageY; });
-  return mouse;
-};
-
 const Image = (src, offset, flip) => {
   var image = document.createElement("img");
   image.src = "img/" + src;
@@ -306,54 +265,54 @@ const Image = (src, offset, flip) => {
 const images = {
   thief: {
     right: [
-      Image("thief/frame_00r.gif", [-28,-6], 1),
-      Image("thief/frame_01r.gif", [-28,-6], 1),
-      Image("thief/frame_02r.gif", [-28,-6], 1),
-      Image("thief/frame_03r.gif", [-28,-6], 1),
-      Image("thief/frame_04r.gif", [-28,-6], 1),
-      Image("thief/frame_05r.gif", [-28,-6], 1),
-      Image("thief/frame_06r.gif", [-28,-6], 1),
-      Image("thief/frame_07r.gif", [-28,-6], 1),
-      Image("thief/frame_08r.gif", [-28,-6], 1),
-      Image("thief/frame_09r.gif", [-28,-6], 1),
-      Image("thief/frame_10r.gif", [-28,-6], 1),
-      Image("thief/frame_11r.gif", [-28,-6], 1),
-      Image("thief/frame_12r.gif", [-28,-6], 1),
-      Image("thief/frame_13r.gif", [-28,-6], 1),
-      Image("thief/frame_14r.gif", [-28,-6], 1),
-      Image("thief/frame_15r.gif", [-28,-6], 1),
-      Image("thief/frame_16r.gif", [-28,-6], 1),
-      Image("thief/frame_17r.gif", [-28,-6], 1),
-      Image("thief/frame_18r.gif", [-28,-6], 1),
-      Image("thief/frame_19r.gif", [-28,-6], 1),
-      Image("thief/frame_20r.gif", [-28,-6], 1),
-      Image("thief/frame_21r.gif", [-28,-6], 1),
-      Image("thief/frame_22r.gif", [-28,-6], 1),
+      Image("thief/frame_00r.gif", [-28,-16], 1),
+      Image("thief/frame_01r.gif", [-28,-16], 1),
+      Image("thief/frame_02r.gif", [-28,-16], 1),
+      Image("thief/frame_03r.gif", [-28,-16], 1),
+      Image("thief/frame_04r.gif", [-28,-16], 1),
+      Image("thief/frame_05r.gif", [-28,-16], 1),
+      Image("thief/frame_06r.gif", [-28,-16], 1),
+      Image("thief/frame_07r.gif", [-28,-16], 1),
+      Image("thief/frame_08r.gif", [-28,-16], 1),
+      Image("thief/frame_09r.gif", [-28,-16], 1),
+      Image("thief/frame_10r.gif", [-28,-16], 1),
+      Image("thief/frame_11r.gif", [-28,-16], 1),
+      Image("thief/frame_12r.gif", [-28,-16], 1),
+      Image("thief/frame_13r.gif", [-28,-16], 1),
+      Image("thief/frame_14r.gif", [-28,-16], 1),
+      Image("thief/frame_15r.gif", [-28,-16], 1),
+      Image("thief/frame_16r.gif", [-28,-16], 1),
+      Image("thief/frame_17r.gif", [-28,-16], 1),
+      Image("thief/frame_18r.gif", [-28,-16], 1),
+      Image("thief/frame_19r.gif", [-28,-16], 1),
+      Image("thief/frame_20r.gif", [-28,-16], 1),
+      Image("thief/frame_21r.gif", [-28,-16], 1),
+      Image("thief/frame_22r.gif", [-28,-16], 1),
     ],
     left: [
-      Image("thief/frame_00.gif", [-28,-6], 0),
-      Image("thief/frame_01.gif", [-28,-6], 0),
-      Image("thief/frame_02.gif", [-28,-6], 0),
-      Image("thief/frame_03.gif", [-28,-6], 0),
-      Image("thief/frame_04.gif", [-28,-6], 0),
-      Image("thief/frame_05.gif", [-28,-6], 0),
-      Image("thief/frame_06.gif", [-28,-6], 0),
-      Image("thief/frame_07.gif", [-28,-6], 0),
-      Image("thief/frame_08.gif", [-28,-6], 0),
-      Image("thief/frame_09.gif", [-28,-6], 0),
-      Image("thief/frame_10.gif", [-28,-6], 0),
-      Image("thief/frame_11.gif", [-28,-6], 0),
-      Image("thief/frame_12.gif", [-28,-6], 0),
-      Image("thief/frame_13.gif", [-28,-6], 0),
-      Image("thief/frame_14.gif", [-28,-6], 0),
-      Image("thief/frame_15.gif", [-28,-6], 0),
-      Image("thief/frame_16.gif", [-28,-6], 0),
-      Image("thief/frame_17.gif", [-28,-6], 0),
-      Image("thief/frame_18.gif", [-28,-6], 0),
-      Image("thief/frame_19.gif", [-28,-6], 0),
-      Image("thief/frame_20.gif", [-28,-6], 0),
-      Image("thief/frame_21.gif", [-28,-6], 0),
-      Image("thief/frame_22.gif", [-28,-6], 0),
+      Image("thief/frame_00.gif", [-28,-16], 0),
+      Image("thief/frame_01.gif", [-28,-16], 0),
+      Image("thief/frame_02.gif", [-28,-16], 0),
+      Image("thief/frame_03.gif", [-28,-16], 0),
+      Image("thief/frame_04.gif", [-28,-16], 0),
+      Image("thief/frame_05.gif", [-28,-16], 0),
+      Image("thief/frame_06.gif", [-28,-16], 0),
+      Image("thief/frame_07.gif", [-28,-16], 0),
+      Image("thief/frame_08.gif", [-28,-16], 0),
+      Image("thief/frame_09.gif", [-28,-16], 0),
+      Image("thief/frame_10.gif", [-28,-16], 0),
+      Image("thief/frame_11.gif", [-28,-16], 0),
+      Image("thief/frame_12.gif", [-28,-16], 0),
+      Image("thief/frame_13.gif", [-28,-16], 0),
+      Image("thief/frame_14.gif", [-28,-16], 0),
+      Image("thief/frame_15.gif", [-28,-16], 0),
+      Image("thief/frame_16.gif", [-28,-16], 0),
+      Image("thief/frame_17.gif", [-28,-16], 0),
+      Image("thief/frame_18.gif", [-28,-16], 0),
+      Image("thief/frame_19.gif", [-28,-16], 0),
+      Image("thief/frame_20.gif", [-28,-16], 0),
+      Image("thief/frame_21.gif", [-28,-16], 0),
+      Image("thief/frame_22.gif", [-28,-16], 0),
     ],
   }
 };
@@ -379,59 +338,20 @@ function Canvas(width, height) {
 window.onload = () => {
   // Game state
   var game = Game(default_map_data);
+  console.log(game);
   var acts = [];
 
   // UI state
   var screen_width  = window.innerWidth;
   var screen_height = window.innerHeight;
-  var tile_size     = 32;
   var canvas        = Canvas(screen_width, screen_height);
+  var tile_size     = 16;
   var key           = Keyboard({down: key => { acts.push(key); act(game, key); }});
-  var mouse         = Mouse();
-  var center_pos    = [2, 32];
-  var pos_to_coord  = ([i,j]) => [(i - center_pos[0]) * tile_size + screen_width * 0.5, (j - center_pos[1]) * tile_size + screen_height * 0.5];
-  var screen_rad    = [Math.floor(screen_width / tile_size * 0.5 + 2), Math.floor(screen_height / tile_size * 0.5 + 2)]; // in tiles
-  var focus_hero    = true;
-  document.body.style.background = 'url("img/grass.png")';
+  var pos_to_coord  = ([i,j]) => [i * tile_size, j * tile_size];
+  //document.body.style.background = 'url("img/grass.png")';
   document.body.appendChild(canvas);
 
   // Performs camera movements
-  const camera_movements = () => {
-    var pressing_arrow = key.ArrowRight || key.ArrowLeft || key.ArrowDown || key.ArrowUp;
-    var pushing_screen = mouse[0] < 16 || mouse[0] > screen_width - 16 || mouse[1] < 16 || mouse[1] > screen_height - 16;
-    var pressing_space = key[" "];
-    
-    // Manual movements
-    if (pressing_arrow || pushing_screen) {
-      focus_hero = false;
-      if (pressing_arrow) {
-        center_pos[0] += ((key.ArrowRight||0) - (key.ArrowLeft||0)) * 12 / tile_size;
-        center_pos[1] += ((key.ArrowDown||0) - (key.ArrowUp||0)) * 12 / tile_size;
-      } 
-      if (pushing_screen) {
-        var push_dir = [mouse[0] - screen_width * 0.5, mouse[1] - screen_height * 0.5];
-        var push_len = Math.sqrt(push_dir[0] * push_dir[0] + push_dir[1] * push_dir[1]);
-        var push_vec = [push_dir[0] / push_len, push_dir[1] / push_len];
-        center_pos[0] += push_vec[0];
-        center_pos[1] += push_vec[1];
-      }
-
-    // Focus active hero
-    } else if (pressing_space || focus_hero) {
-      focus_hero = true;
-      //var pid = game.turn % 10;
-      // If the last active hero just moved, focus it for a while
-      //var last_active_hero = get_active_hero(game, -1);
-      //if (T - last_active_hero.last_step < walk_anim_duration) {
-        //center_coord = walk_anim_pos(last_active_hero, get_active_pos(game, -1));
-      // Otherwise, focus the actual active hero
-      //} else {
-      //center_coord = walk_anim_pos(get_active_hero(game), get_active_pos(game));
-      //}
-      center_pos = [...get_active_pos(game)];
-    }
-  };
-
   // Main loop
   const render = () => {
 
@@ -439,36 +359,24 @@ window.onload = () => {
     fps();
     var T = Date.now() / 1000;
 
-    // User inputs
-    camera_movements();
-    var center_coord = pos_to_coord(center_pos);
-
-    // Background
-    document.body.style["background-position"] = "right " + center_coord[0] + "px bottom " + center_coord[1] + "px";
-
     // Clears screen
     canvas.context.clearRect(0, 0, screen_width, screen_height);
 
     // Draws grid
-    for (var dj = -screen_rad[1]; dj <= screen_rad[1]; ++dj) {
-      for (var di = -screen_rad[0]; di <= screen_rad[0]; ++di) {
-        var [i,j] = [Math.floor(center_pos[0]) + di, Math.floor(center_pos[1]) + dj];
-        var [x,y] = pos_to_coord([i, j]);
-        var floor = get_floor(game, [i,j]);
-        if (floor) {
-          canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
-          canvas.context.beginPath();
-          canvas.context.rect(x, y, tile_size, tile_size);
-          canvas.context.stroke();
-          canvas.context.closePath();
-        }
+    for (var j = 0; j < game.dim[1]; ++j) {
+      for (var i = 0; i < game.dim[0]; ++i) { 
+        var [x,y] = pos_to_coord([i,j]);
+        canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
+        canvas.context.beginPath();
+        canvas.context.rect(x, y, tile_size, tile_size);
+        canvas.context.stroke();
+        canvas.context.closePath();
       }
     }
 
     // Draws tiles
-    for (var dj = -screen_rad[1]; dj <= screen_rad[1]; ++dj) {
-      for (var di = -screen_rad[0]; di <= screen_rad[0]; ++di) {
-        var [i,j] = [Math.floor(center_pos[0]) + di, Math.floor(center_pos[1]) + dj];
+    for (var j = 0; j < game.dim[1]; ++j) {
+      for (var i = 0; i < game.dim[0]; ++i) { 
         var [x,y] = pos_to_coord([i, j]);
         var thing = get_thing(game, [i,j]);
         var floor = get_floor(game, [i,j]);
@@ -491,75 +399,9 @@ window.onload = () => {
       }
     }
 
-    // Draws heroes
-    //canvas.context.strokeStyle = canvas.context.fillStyle = "#000000";
-    //var [x,y] = add2(project(pos), [-4, -4]);
-    //canvas.context.beginPath();
-    //canvas.context.rect(x, y, 8, 8);
-    //canvas.context.fill();
-    //canvas.context.closePath();
-
-    // Draws minimap
-    canvas.context.strokeStyle = canvas.context.fillStyle = "rgba(128,128,128,0.5)";
-    canvas.context.beginPath();
-    canvas.context.rect(screen_width - 128, screen_height - 128, 128, 128);
-    canvas.context.fill();
-    canvas.context.closePath();
-
-    // Draws screen on minimap
-    canvas.context.beginPath();
-    canvas.context.fillStyle = "rgb(255,255,255,0.25)";
-    var X0 = Math.min(Math.max(screen_width - 128 + (Math.floor(center_pos[0]) - screen_rad[0] - 0) * 2, screen_width - 128), screen_width);
-    var Y0 = Math.min(Math.max(screen_height - 128 + (Math.floor(center_pos[1]) - screen_rad[1] - 0) * 2, screen_height - 128), screen_height);
-    var X1 = Math.min(Math.max(screen_width - 128 + (Math.floor(center_pos[0]) + screen_rad[0] + 1) * 2, screen_width - 128), screen_width);
-    var Y1 = Math.min(Math.max(screen_height - 128 + (Math.floor(center_pos[1]) + screen_rad[1] + 1) * 2, screen_height - 128), screen_height);
-    canvas.context.rect(X0, Y0, X1 - X0, Y1 - Y0);
-    canvas.context.fill();
-    canvas.context.closePath();
-
-    // Draws camera on minimap
-    //canvas.context.beginPath();
-    //canvas.context.fillStyle = "rgb(0,0,0)";
-    //canvas.context.rect(screen_width - 128 + center_pos[0] * 2, screen_height - 128 + center_pos[1] * 2, 2, 2);
-    //canvas.context.fill();
-    //canvas.context.closePath();
-
-    // Draws units on minimap
-    for (var j = 0; j < game.dim[1]; ++j) {
-      for (var i = 0; i < game.dim[1]; ++i) {
-        var [x,y] = [screen_width - 128 + i * 2, screen_height - 128 + j * 2];
-        var floor = get_floor(game, [i, j]);
-        var thing = get_thing(game, [i, j]);
-
-        // Thing
-        if (thing && thing.color) {
-          canvas.context.fillStyle = thing.color;
-          canvas.context.beginPath();
-          canvas.context.rect(x, y, 2, 2);
-          canvas.context.fill();
-          canvas.context.closePath();
-        }
-      }
-    }
-
-
     window.requestAnimationFrame(render);
   };
 
   window.requestAnimationFrame(render);
 };
 
-
-// Walk animation
-//var walk_anim_duration = 0.25;
-//const walk_anim_pos = (thing, pos) => {
-  //var x = pos[0] * tile_size;
-  //var y = pos[1] * tile_size;
-  //if (T - thing.last_step < walk_anim_duration) {
-    //var s = (T - thing.last_step) / walk_anim_duration;
-    //var d = thing.dir;
-    //x -= (1 - s) * d[0] * tile_size;
-    //y -= (1 - s) * d[1] * tile_size;
-  //}
-  //return [x,y];
-//};

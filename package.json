@@ -1,5 +1,5 @@
 {
-  "name": "taelin",
+  "name": "Kaelin",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/moonad/taelin.git"
+    "url": "git+https://github.com/moonad/kaelin.git"
   },
   "keywords": [
     "taelin"
@@ -17,16 +17,16 @@
   "author": "Victor Maia",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/moonad/taelin/issues"
+    "url": "https://github.com/moonad/kaelin/issues"
   },
-  "homepage": "https://github.com/moonad/taelin#readme",
+  "homepage": "https://github.com/moonad/kaelin#readme",
   "devDependencies": {
     "webpack": "^4.29.3",
     "webpack-cli": "^3.2.3",
     "raw-loader": "^2.0.0"
   },
   "dependencies": {
-    "formality-core": "^0.1.33",
+    "formality-core": "^0.1.42",
     "inferno": "^7.1.9",
     "inferno-canvas-component-2": "^1.0.0",
     "inferno-hyperscript": "^7.1.9"
