@@ -5,10 +5,14 @@
 const fm = require("formality-core");
 const {infs, defs} = fm.core.parse(require("./../../formality-core/examples"));
 const compile = name => fm.to_js.compile(defs[name], defs);
-const K = {
-  new_board: compile("new_board"),
-  step: compile("step")
-};
+const Cons = compile("Cons");
+const Nil  = compile("Nil");
+const
+  [new_board,
+  [exec_casts,
+  [empty_casts,
+  [cast,
+  ]]]] = compile("kaelin");
 
 // :::::::::::::::
 // :: Rendering ::
@@ -216,6 +220,82 @@ const render_board = (game_board, canvas) => {
   }
 };
 
+
+const make_casts = (code, board) => { 
+  const get_hero_positions = (board_or_piece, i = 0, idx = 0, map = {}) => {
+    if (i < 10) {
+      let board = board_or_piece;
+      get_hero_positions(board[0], i + 1, idx * 2 + 0, map);
+      get_hero_positions(board[1], i + 1, idx * 2 + 1, map);
+    } else {
+      let piece       = board_or_piece;
+      let case_air    = null;
+      let case_wall   = null;
+      let case_cliff  = null;
+      let case_throne = side => null;
+      let case_unit   = side => hero => hp => map[hero] = [idx % 32, (idx / 32) >>> 0];
+      piece(case_air)(case_wall)(case_cliff)(case_throne)(case_unit);
+    }
+    return map;
+  };
+  const parse_arg = arg => {
+    if (arg[0] === "[") {
+      return JSON.parse(arg);
+    } else if (arg.length === 1) {
+      if (arg === "r") return [1,0];
+      if (arg === "d") return [0,1];
+      if (arg === "l") return [-1,0];
+      if (arg === "u") return [-1,0];
+      throw "Incorrect arg: " + arg;
+    } else {
+      console.log("......", JSON.stringify(arg.split("").map(parse_arg)));
+      return arg.split("").map(parse_arg).reduce((res,arg) => Cons(arg)(res), Nil);
+    }
+  };
+  const hero_pos = get_hero_positions(board);
+  const icon_hero = {
+    to: 0,
+    cr: 7,
+  };
+  const skills = {
+    to: {
+      w: 136 // tophoro walk
+    },
+    cr: {
+      w: 134 // croni walk
+    }
+  };
+  var casts = empty_casts;
+  var lines = code.split("\n").filter(s => s.length > 0);
+  for (var i = 0; i < lines.length; ++i) {
+    var line = lines[i];
+    while (line[0] === " ") {
+      line = line.slice(1);
+    }
+    if (line.length === 0) {
+      continue;
+    }
+    var words = line.split(" ");
+    var icon = words[0].slice(0,2);
+    var hero = icon_hero[icon];
+    if (hero === undefined) {
+      continue;
+    }
+    var skill = skills[icon][words[0][2]];
+    if (skill === undefined) {
+      continue;
+    }
+    var args = (t) => {
+      for (var j = 1; j < words.length; ++j) {
+        t = t(parse_arg(words[j]));
+      }
+      return t;
+    };
+    casts = cast(skill)(hero_pos[hero])(args)(casts);
+  }
+  return casts;
+};
+
 window.onload = () => {
   // Name
   if (!localStorage.getItem("name")) {
@@ -240,14 +320,40 @@ window.onload = () => {
         case "new":
           game = {
             players: arg,
-            board: K.new_board
-          }
-        break;
-        case "step":
-          const pos = JSON.parse(arg[0]);
-          const dir = JSON.parse(arg[1]);
-          game.board = K.step(pos)(dir)(game.board);
-        break;
+            casts: [],
+            board: new_board,
+          };
+          var casts = make_casts(`
+            tow dd
+          `, game.board);
+          //var casts = empty_casts; 
+          //var casts = cast(134)([29,1])(t => t(Cons([0,1])(Cons([0,1])(Cons([1,0])(Nil)))))(casts);
+          //var casts = cast(176)([30,1])(t => t([0,1]))(casts);
+          game.board = exec_casts(casts)(game.board)[0];
+          break;
+
+
+        //case "cast":
+          //var skill = parse_arg(arg[0]);
+          //var hero  = K.skill_hero(skill);
+          //var args  = t => arg.slice(2).reduce((res,val) => res(parse_arg(val)), t);
+          //console.log("casting", skill, hero, args(a => [a]));
+          //game.casts[hero] = args;
+          //console.log("casts", game.casts);
+          //break;
+        //case "exec":
+          //var pos = get_hero_positions(game.board);
+          //var casts = cons => nil => nil;
+          //for (var hero in game.casts) {
+            //casts = (casts => cons => nil => cons([[hero,pos[hero]],game.casts[hero]])(casts))(casts);
+          //}
+          //game.board = exec_turn(game.board);
+          //break;
+        //case "step":
+          //var pos = JSON.parse(arg[0]);
+          //var dir = JSON.parse(arg[1]);
+          //game.board = K.step(pos)(dir)(game.board);
+        //break;
       }
     };
 
