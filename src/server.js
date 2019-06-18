@@ -20,6 +20,9 @@ app.ws("/chat", function(ws, req) {
 
   ws.on("message", function(msg) {
     console.log("Message: " + msg);
+    if (msg.slice(-5) === "RESET") {
+      messages = [];
+    }
     if (msg.slice(msg.indexOf(":") + 1).length > 0) {
       messages.push(msg);
       for (var id in clients) {
