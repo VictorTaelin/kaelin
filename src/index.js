@@ -8,9 +8,6 @@ const Canvas     = require("./canvas.js");
 const kaelin     = require("./kaelin.js");
 const parse_cast = require("./parse_cast.js");
 
-console.log(parse_cast("cr ^^^ 3f 11 11"));
-console.log("->", kaelin.get_skill_priority(22));
-
 const skill_name = {
   0: "TOPHORO_WALK",
   1: "EARTH_ROOT",
@@ -29,9 +26,9 @@ const skill_name = {
   18: "FLAME_WAVE",
   19: "FLAME_NOVA",
   20: "CRONI_WALK",
-  21: "SHADOW_TRAP",
-  22: "SHADOW_FLUX",
-  23: "SHADOW_BOND",
+  21: "SHADOW_BOND",
+  22: "SHADOW_TRAP",
+  23: "SHADOW_FLUX",
   24: "SNARCH_WALK",
   25: "QUICK_BOLT_0",
   26: "QUICK_BOLT_1",
@@ -84,26 +81,29 @@ const hero_name = {
 // Renders the board to a canvas
 const tile_size = 32;
 
+const pos_to_coord = ([i,j]) => [(i + 0.5) * tile_size, (j + 0.5) * tile_size];
+const coord_to_pos = ([x,y]) => [Math.max(0, Math.min(Math.floor(x / tile_size - 0.5), 15)), Math.max(0, Math.min(Math.floor(y / tile_size - 0.5), 15))];
+
+// Converts board to JSON
+const unit_to_json = unit => {
+let case_void = ["Void"];
+let case_item = type => ["Item", {type}];
+let case_goal = side => ["Goal", {side}];
+let case_hero = side => hero => life => defs => eff1 => lock => mute => spec => ["Hero", {side, hero, life, defs, eff1, lock, mute, spec}];
+return kaelin.unit_to_scott(unit)(case_void)(case_item)(case_goal)(case_hero);
+};
+
+// Converts board to JSON
+const board_to_json = (val, i = 0) => {
+if (i < 8) {
+  return board_to_json(val[0], i + 1).concat(board_to_json(val[1], i + 1));
+} else {
+  return [unit_to_json(val)];
+}
+};
+
+// Renders the game
 const render_game = (game, canvas) => {
-  const pos_to_coord = ([i,j]) => [(i + 0.5) * tile_size, (j + 0.5) * tile_size];
-
-  // Converts board to JSON
-  const unit_to_json = unit => {
-    let case_void = ["Void"];
-    let case_item = type => ["Item", {type}];
-    let case_goal = side => ["Goal", {side}];
-    let case_hero = side => hero => life => defs => eff1 => lock => mute => spec => ["Hero", {side, hero, life, defs, eff1, lock, mute, spec}];
-    return kaelin.unit_to_scott(unit)(case_void)(case_item)(case_goal)(case_hero);
-  };
-
-  // Converts board to JSON
-  const board_to_json = (val, i = 0) => {
-    if (i < 8) {
-      return board_to_json(val[0], i + 1).concat(board_to_json(val[1], i + 1));
-    } else {
-      return [unit_to_json(val)];
-    }
-  };
 
   var board = board_to_json(game.ticks[game.index][2]);
 
@@ -114,7 +114,7 @@ const render_game = (game, canvas) => {
   canvas.context.fill();
 
   // Renders turn info
-  var tick_info = "Tick: " + game.index + "/" + game.ticks.length + ": " + game.ticks[game.index][1];
+  var tick_info = "Tick: " + game.index + "/" + (game.ticks.length - 1) + ": " + game.ticks[game.index][1];
   canvas.context.font = "12px monospace";
   canvas.context.textAlign = "center"; 
   canvas.context.textBaseline = "middle"; 
@@ -126,10 +126,16 @@ const render_game = (game, canvas) => {
     for (var i = 0; i < 16; ++i) {
       var [x,y] = pos_to_coord([i,j]);
       // Rectangle
-      canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
+      
       canvas.context.beginPath();
-      canvas.context.rect(x, y, tile_size, tile_size);
-      canvas.context.stroke();
+    canvas.context.rect(x, y, tile_size, tile_size);
+      if (game.selected && JSON.stringify(game.selected[0]) === JSON.stringify([i,j])) {
+        canvas.context.fillStyle = "rgba(64,64,64,0.3)";
+        canvas.context.fill();
+      } else {
+        canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
+        canvas.context.stroke();
+      }
       canvas.context.closePath();
       // Coordinate
       canvas.context.font = "10px courier new";
@@ -177,6 +183,21 @@ const render_game = (game, canvas) => {
       }
     }
   }
+
+  if (game.selected) {
+    for (var n = 0; n < 4; ++n) {
+      if (game.selected[n + 2]) {
+        var [i,j] = game.selected[n + 2];
+        var [x,y] = pos_to_coord([i,j]);
+        canvas.context.font = "bold 24px monospace";
+        canvas.context.textAlign = "center"; 
+        canvas.context.textBaseline = "middle"; 
+        canvas.context.fillStyle = "black";
+        canvas.context.fillText("XFDS"[n], x + tile_size * 0.5, y + tile_size * 0.5);
+      }
+    }
+      
+  }
 };
 
 const fm_string_to_string = str => {
@@ -204,13 +225,68 @@ window.onload = () => {
     index: 0,
     ticks: [[0,"Game begins.",kaelin.new_board]],
     casts: [],
+    mouse: [0,0],
     turn: 0,
+    selected: null,
   };
+
+  // Canvas
+  var canvas = Canvas(tile_size * 16 + 32, tile_size * 16 + 32);
+  document.getElementById("board_box").appendChild(canvas);
 
   // Keyboard
   document.body.onkeydown = e => {
-    var add = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
-    game.index = Math.max(0, Math.min(game.index + add, game.ticks.length - 1));
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      var add = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+      game.index = Math.max(0, Math.min(game.index + add, game.ticks.length - 1));
+    }
+    if (e.key === "f" || e.key === "d" || e.key === "s") {
+      var slot = ({f: 1, d: 2, s: 3})[e.key];
+      var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][2])[1]);
+      game.selected[slot + 2] = [game.mouse[0], game.mouse[1]];
+      console.log(game.selected);
+    }
+    if (e.key === ".") {
+      if (game.index < game.ticks.length - 1) {
+        game.index = game.ticks.length - 1;
+      } else {
+        ws.send(name + ": " + ".");
+      }
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      if (e.shiftKey) {
+        ws.send(name + ": " + ".");
+      } else if (game.selected) {
+        var cast = "@" + hero_name[game.selected[1]].slice(0, 2).toLowerCase();
+        for (var n = 0; n < 4; ++n) {
+          var pos = game.selected[n + 2];
+          cast += " " + (pos ? pos[0].toString(16) + pos[1].toString(16) : ".");
+        }
+        ws.send(name + ": " + cast);
+        game.selected = null;
+      }
+    }
+    if (e.key === "Escape") {
+      game.selected = null;
+    }
+  };
+
+  // Mouse
+  canvas.onmousemove = e => {
+    // Registers the mouse position
+    var [x,y] = [e.offsetX, e.offsetY];
+    var [i,j] = coord_to_pos([x,y]);
+    game.mouse = [i,j];
+  };
+  canvas.onclick = e => {
+    // Selects an unitt
+    var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][2])[1]);
+    if (game.selected) {
+      game.selected[2] = [game.mouse[0], game.mouse[1]];
+    }
+    if (unit[0] === "Hero") {
+      game.selected = [[game.mouse[0],game.mouse[1]], unit[1].hero, null, null, null, null];
+    }
   };
 
   // Messages
@@ -247,11 +323,16 @@ window.onload = () => {
       //var casts = game.casts.sort((a,b) => kaelin.get_skill_priority(a[0]) - kaelin.get_skill_priority(b[0]));
       var casts = kaelin.sort_casts(game.casts);
       for (var i = 0; i < casts.length; ++i) {
-        var turn_message = hero_name[Math.floor(casts[i][0] / 4)] + " casted " + skill_name[casts[i][0]] + ".";
+        var show_args = args => typeof args === "object" ? args[0].toString(16) + args[1].toString(16) : String(args);
+        var hero = hero_name[Math.floor(casts[i][0] / 4)];
+        var skill = skill_name[casts[i][0]];
+        var args = skill.indexOf("WALK") === -1 ? "(" + show_args(casts[i][1]) + ")" : "";
+        var turn_message = hero + " used " + skill + args + ".";
         game.ticks.push([game.turn, turn_message, kaelin.cast(casts[i])(game.ticks[game.ticks.length - 1][2])]);
       };
-      ++game.turn;
       post("Completed turn " + game.turn + " with " + game.casts.length + " casts!", "green_log");
+      ++game.turn;
+      game.casts = [];
     }
 
     if (msg === "$") {
@@ -347,10 +428,6 @@ window.onload = () => {
   ws.onopen = function open() {};
   ws.onmessage = (data) => on_message(data.data);
 
-  // Canvas
-  var canvas = Canvas(tile_size * 16 + 32, tile_size * 16 + 32);
-  document.getElementById("board_box").appendChild(canvas);
-
   // Chat
   var chat = document.createElement("div");
   var chat_box = document.getElementById("chat_box");
@@ -363,16 +440,37 @@ window.onload = () => {
       ws.send(name + ": " + input.value);
       setTimeout(() => {
         input.value = "";
-        chat_box.scrollTop = chat_box.scrollHeight;
       }, 0);
     }
   };
+
+  // Tips
+  var tips_box = document.getElementById("tips_box");
+  var tips = [
+    "Hero    | Skill F           | Skill D             | Skill S",
+    "------- | ----------------- | ------------------- | -----------------",
+    "TOPHORO | Earth_Root*       | Earth_Wall*         | Earth_Rise       ",
+    "GONK    | Empathy*          | Revenge*            | Ground_Slam      ",
+    "STANCI  | Restore*          | Escort*             | Detain*          ",
+    "ERKOS   | Flame_Ball        | Flame_Wave          | Flame_Nova       ",
+    "CRONI   | Shadow_Bond*      | Shadow_Trap*        | Shadow_Flux      ",
+    "SNARCH  | Ballista*         | Quick_Bolt_0*       | Quick_Bolt_1*    ",
+    "SIRPIX  | Stealth_Move*     | Stealth_Strike*     | Lockpick         ",
+    "KENLUA  | Haste*            | Dodge*              | Slash            ",
+    "FLINA   | Javelin*          | Fly                 | Gust             ",
+    "ZAGATUR | Wrap*             | Needle              | Summon           ",
+    "AGDRIS  | Memento*          | Silence*            | Protect*         ",
+    "MEWRU   | Teleport*         | Psychock            | Imprison         ",
+
+  ].join("\n");
+  tips_box.innerText = tips;
 
   // Main loop
   const render = () => {
     //if (game) {
       render_game(game, canvas); 
     //
+    chat_box.scrollTop = chat_box.scrollHeight;
     window.requestAnimationFrame(render);
   };
 

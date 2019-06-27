@@ -22,7 +22,7 @@
       }
       #board_chat_box {
         width: 100%;
-        height: 768px;
+        height: 544px;
         display: flex;
         flex-flow: row nowrap;
         justify-content: flex-start;
@@ -40,10 +40,24 @@
         overflow-y: scroll;
         height: 100%;
       }
-      #input_box {
+      #input_tips_box {
         background: rgb(210,200,200);
         width: 100%;
         height: calc(100% - 544px);
+        display: flex;
+        flex-flow: row nowrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+      }
+      #tips_box {
+        width: 544px;
+        padding: 3px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      #input_box {
+        width: calc(100% - 544px);
+        height: 100%;
       }
       #input {
         width: 100%;
@@ -74,8 +88,13 @@
         <div id="chat_box">
         </div>
       </div>
-      <div id="input_box">
-        <textarea id="input"></textarea>
+      <div id="input_tips_box">
+        <pre id="tips_box">
+        </pre>
+        <div id="input_box">
+          <textarea id="input"></textarea>
+        </div>
+      </div>
       </div>
     </div>
   </body>
