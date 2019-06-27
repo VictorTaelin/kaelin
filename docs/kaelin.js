@@ -16,7 +16,9 @@ const
   [print_board,
   [unit_to_scott,
   [get_skill_priority,
+  [get_skill_area,
   [get_at,
+  [end_turn,
   [TOPHORO,
   [GONK,
   [STANCI,
@@ -33,7 +35,7 @@ const
   [AGDRIS,
   [MEWEM,
   [HERO_15,
-  ]]]]]]]]]]]]]]]]]]]]]]
+  ]]]]]]]]]]]]]]]]]]]]]]]]
   = compile("kaelin");
 
 const sort_casts = casts => {
@@ -59,7 +61,9 @@ module.exports = {
   print_board,
   unit_to_scott,
   get_skill_priority,
+  get_skill_area,
   get_at,
+  end_turn,
   TOPHORO,
   GONK,
   STANCI,

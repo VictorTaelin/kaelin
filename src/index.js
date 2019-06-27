@@ -78,6 +78,8 @@ const hero_name = {
   15: "?????",
 };
 
+const dist = ([ax,ay],[bx,by]) => Math.abs(ax-bx) + Math.abs(ay-by);
+
 // Renders the board to a canvas
 const tile_size = 32;
 
@@ -86,11 +88,11 @@ const coord_to_pos = ([x,y]) => [Math.max(0, Math.min(Math.floor(x / tile_size -
 
 // Converts board to JSON
 const unit_to_json = unit => {
-let case_void = ["Void"];
-let case_item = type => ["Item", {type}];
-let case_goal = side => ["Goal", {side}];
-let case_hero = side => hero => life => defs => eff1 => lock => mute => spec => ["Hero", {side, hero, life, defs, eff1, lock, mute, spec}];
-return kaelin.unit_to_scott(unit)(case_void)(case_item)(case_goal)(case_hero);
+  let case_void = ["Void"];
+  let case_item = type => ["Item", {type}];
+  let case_goal = side => ["Goal", {side}];
+  let case_hero = side => hero => life => defs => eff1 => lock => mute => spec => ["Hero", {side, hero, life, defs, eff1, lock, mute, spec}];
+  return kaelin.unit_to_scott(unit)(case_void)(case_item)(case_goal)(case_hero);
 };
 
 // Converts board to JSON
@@ -105,7 +107,8 @@ if (i < 8) {
 // Renders the game
 const render_game = (game, canvas) => {
 
-  var board = board_to_json(game.ticks[game.index][2]);
+  var tick = game.ticks[game.index];
+  var board = board_to_json(tick[3]);
 
   // Clears
   canvas.context.clearRect(0, 0, canvas.width, canvas.height);
@@ -114,7 +117,7 @@ const render_game = (game, canvas) => {
   canvas.context.fill();
 
   // Renders turn info
-  var tick_info = "Tick: " + game.index + "/" + (game.ticks.length - 1) + ": " + game.ticks[game.index][1];
+  var tick_info = "Tick " + game.index + "/" + (game.ticks.length - 1) + ", Turn " + tick[0] + ": " + tick[1];
   canvas.context.font = "12px monospace";
   canvas.context.textAlign = "center"; 
   canvas.context.textBaseline = "middle"; 
@@ -128,14 +131,29 @@ const render_game = (game, canvas) => {
       // Rectangle
       
       canvas.context.beginPath();
-    canvas.context.rect(x, y, tile_size, tile_size);
-      if (game.selected && JSON.stringify(game.selected[0]) === JSON.stringify([i,j])) {
+      canvas.context.rect(x, y, tile_size, tile_size);
+      if (tick[2]) {
+        var unit = unit_to_json(kaelin.get_at([i,j])(tick[3])[1]);
+        if (dist(tick[2][1], [i,j]) <= kaelin.get_skill_area(tick[2][0])) {
+          if (tick[2][0] % 4 === 0) {
+            canvas.context.fillStyle = "rgba(32,128,128,0.5)";
+          //} else if (unit[0] === "Hero" && unit[1].side === 0) {
+            //canvas.context.fillStyle = "rgba(32,32,128,0.5)";
+          } else {
+            canvas.context.fillStyle = "rgba(128,32,32,0.5)";
+          }
+          canvas.context.fill();
+        }
+        if (unit[0] === "Hero" && unit[1].hero === Math.floor(tick[2][0] / 4)) {
+          canvas.context.fillStyle = "rgba(64,64,64,0.3)";
+          canvas.context.fill();
+        }
+      } else if (game.selected && dist(game.selected[0], [i,j]) === 0) {
         canvas.context.fillStyle = "rgba(64,64,64,0.3)";
         canvas.context.fill();
-      } else {
-        canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
-        canvas.context.stroke();
       }
+      canvas.context.strokeStyle = "rgba(128,128,128,0.15)";
+      canvas.context.stroke();
       canvas.context.closePath();
       // Coordinate
       canvas.context.font = "10px courier new";
@@ -158,11 +176,16 @@ const render_game = (game, canvas) => {
         case "Void":
           break;
         case "Item":
-          canvas.context.fillStyle = "rgb(64,64,64)";
-          canvas.context.beginPath();
-          canvas.context.rect(x, y, tile_size, tile_size);
-          canvas.context.fill();
-          canvas.context.closePath();
+          if (unit[1].type === 2) {
+            var image = images.item.hourglass;
+            canvas.context.drawImage(image, x + tile_size * 0.5 - image.width / 2, y + tile_size * 0.5 - image.height / 2);
+          } else {
+            canvas.context.fillStyle = "rgb(64,64,64)";
+            canvas.context.beginPath();
+            canvas.context.rect(x, y, tile_size, tile_size);
+            canvas.context.fill();
+            canvas.context.closePath();
+          }
           break;
         case "Goal":
           canvas.context.fillStyle = "rgb(128,64,64)";
@@ -176,7 +199,7 @@ const render_game = (game, canvas) => {
           canvas.context.textAlign = "center"; 
           canvas.context.textBaseline = "middle"; 
           canvas.context.fillStyle = "black";
-          canvas.context.fillText(unit[1].life, x + 16, y + 27);
+          canvas.context.fillText(unit[1].life + (unit[1].lock > 0 ? "L" : "") + (unit[1].mute > 0 ? "M" : "") + (unit[1].spec > 0 ? "*" : ""), x + 16, y + 27);
           var image = images[hero_name[unit[1].hero].toLowerCase()].left[0];
           canvas.context.drawImage(image, x + tile_size * 0.5 - image.width / 2, y + tile_size * 0.5 - image.height / 2);
           break;
@@ -223,7 +246,7 @@ window.onload = () => {
   // State
   var game = {
     index: 0,
-    ticks: [[0,"Game begins.",kaelin.new_board]],
+    ticks: [[0,"Game begins.",null,kaelin.new_board]],
     casts: [],
     mouse: [0,0],
     turn: 0,
@@ -240,9 +263,9 @@ window.onload = () => {
       var add = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
       game.index = Math.max(0, Math.min(game.index + add, game.ticks.length - 1));
     }
-    if (e.key === "f" || e.key === "d" || e.key === "s") {
+    if ((e.key === "f" || e.key === "d" || e.key === "s") && game.selected) {
       var slot = ({f: 1, d: 2, s: 3})[e.key];
-      var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][2])[1]);
+      var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][3])[1]);
       game.selected[slot + 2] = [game.mouse[0], game.mouse[1]];
       console.log(game.selected);
     }
@@ -280,7 +303,7 @@ window.onload = () => {
   };
   canvas.onclick = e => {
     // Selects an unitt
-    var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][2])[1]);
+    var unit = unit_to_json(kaelin.get_at(game.mouse)(game.ticks[game.index][3])[1]);
     if (game.selected) {
       game.selected[2] = [game.mouse[0], game.mouse[1]];
     }
@@ -328,8 +351,9 @@ window.onload = () => {
         var skill = skill_name[casts[i][0]];
         var args = skill.indexOf("WALK") === -1 ? "(" + show_args(casts[i][1]) + ")" : "";
         var turn_message = hero + " used " + skill + args + ".";
-        game.ticks.push([game.turn, turn_message, kaelin.cast(casts[i])(game.ticks[game.ticks.length - 1][2])]);
+        game.ticks.push([game.turn, turn_message, casts[i], kaelin.cast(casts[i])(game.ticks[game.ticks.length - 1][3])]);
       };
+      game.ticks.push([game.turn, "End turn.", null, kaelin.end_turn(game.ticks[game.ticks.length - 1][3])]);
       post("Completed turn " + game.turn + " with " + game.casts.length + " casts!", "green_log");
       ++game.turn;
       game.casts = [];
@@ -337,7 +361,7 @@ window.onload = () => {
 
     if (msg === "$") {
       game.casts = [];
-      game.ticks.push([0, "Game begins.", kaelin.new_board]);
+      game.ticks.push([0, "Game begins.", [skill, args], kaelin.new_board]);
       game.turn = 0;
       post("Starting a new game!", "green_log");
     }
@@ -454,7 +478,7 @@ window.onload = () => {
     "STANCI  | Restore*          | Escort*             | Detain*          ",
     "ERKOS   | Flame_Ball        | Flame_Wave          | Flame_Nova       ",
     "CRONI   | Shadow_Bond*      | Shadow_Trap*        | Shadow_Flux      ",
-    "SNARCH  | Ballista*         | Quick_Bolt_0*       | Quick_Bolt_1*    ",
+    "SNARCH  | Quick_Bolt_0*     | Quick_Bolt_1*       | Ballista*        ",
     "SIRPIX  | Stealth_Move*     | Stealth_Strike*     | Lockpick         ",
     "KENLUA  | Haste*            | Dodge*              | Slash            ",
     "FLINA   | Javelin*          | Fly                 | Gust             ",
