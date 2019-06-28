@@ -46,7 +46,7 @@ const render_game = (game, canvas) => {
   // Renders turn info
   
   if (game.casting && now() - game.casting < CAST_TIME) {
-    var top_text = "Casting skills in " + (CAST_TIME - (now() - game.casting)).toFixed(2) + " seconds...";
+    var top_text = "Casting in " + (CAST_TIME - (now() - game.casting)).toFixed(2) + " seconds...";
   } else {
     var top_text = tick.text;
   }
@@ -69,7 +69,10 @@ const render_game = (game, canvas) => {
       var unit = board[j * 16 + i];
 
       // Highlighst hero walk range
-      if (game.my_hero && dist([i,j], hero_pos[game.my_hero]) <= 3) {
+      if (  game.my_hero
+        && hero_pos[game.my_hero]
+        && dist([i,j], hero_pos[game.my_hero]) <= 3
+        && (game.casting && now() - game.casting < CAST_TIME)) {
         canvas.context.fillStyle = "rgba(64,128,64,0.3)";
         canvas.context.fill();
       }
@@ -133,7 +136,14 @@ const render_game = (game, canvas) => {
           canvas.context.textAlign = "center"; 
           canvas.context.textBaseline = "middle"; 
           canvas.context.fillStyle = "black";
-          canvas.context.fillText(unit[1].life + (unit[1].lock > 0 ? "L" : "") + (unit[1].mute > 0 ? "M" : "") + (unit[1].spec > 0 ? "*" : ""), x + 16, y + 27);
+          canvas.context.fillText(
+            unit[1].life
+            + (unit[1].defs ? "+" + unit[1].defs : "")
+            + (unit[1].lock > 0 ? "L" : "")
+            + (unit[1].mute > 0 ? "M" : "")
+            + (unit[1].spec > 0 ? "*" : ""),
+            x + 16,
+            y + 27);
           var image = images[kaelin.hero_name[unit[1].hero].toLowerCase()].left[0];
           canvas.context.drawImage(image, x + tile_size * 0.5 - image.width / 2, y + tile_size * 0.5 - image.height / 2);
           break;
@@ -313,7 +323,9 @@ window.onload = () => {
     var msg_el = document.createElement("div");
     msg_el.className = "message " + className;
     msg_el.innerText = msg;
-    chat.appendChild(msg_el);
+    if (msg.slice(-5) !== "RESET") {
+      chat.appendChild(msg_el);
+    }
     chat_box.scrollTop = chat_box.scrollHeight;
   };
 
@@ -378,6 +390,7 @@ window.onload = () => {
 
     if (msg === "RESET") {
       new_game();
+      chat.innerHTML = "";
     }
   }
 
