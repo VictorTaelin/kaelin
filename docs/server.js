@@ -8,6 +8,21 @@ var online  = 0;
 let clients = {};
 let messages = [];
 
+function post(msg) {
+  messages.push(msg);
+  for (var id in clients) {
+    clients[id].send(msg);
+  }
+};
+
+//var time = 0;
+//setInterval(() => {
+  //if (time % 8 === 0) post("GM: ?");
+  //if (time % 8 === 1) post("GM: .");
+  //++time;
+  //console.log(time);
+//}, 1000);
+
 app.ws("/chat", function(ws, req) {
   console.log("New connection. Online: " + (++online) + ".");
 
@@ -24,10 +39,7 @@ app.ws("/chat", function(ws, req) {
       messages = [];
     }
     if (msg.slice(msg.indexOf(":") + 1).length > 0) {
-      messages.push(msg);
-      for (var id in clients) {
-        clients[id].send(msg);
-      }
+      post(msg);
     }
   });
 

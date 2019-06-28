@@ -17,11 +17,6 @@ const images = {
   item: {
     hourglass: Image("item/hourglass.png", [16,16], 1)
   },
-  croni: {
-    left: [
-      Image("heroes/croni.png", [250,250], 1),
-    ]
-  },
   tophoro: {
     left: [
       Image("heroes/tophoro.png", [250,250], 1),
