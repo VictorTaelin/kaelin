@@ -1,7 +1,7 @@
 const express = require("express")
 const app = express()
 const w = require("express-ws")(app);
-const port = 8000;
+const port = 12500;
 
 let next_id = 0;
 var online  = 0;

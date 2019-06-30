@@ -9,6 +9,7 @@ const kaelin     = require("./kaelin.js");
 const parse_cast = require("./parse_cast.js");
 const dist       = ([ax,ay],[bx,by]) => Math.abs(ax-bx) + Math.abs(ay-by);
 const CAST_TIME  = 5;
+const TICK_TIME  = 1.5;
 const now        = () => Date.now() / 1000;
 
 // Renders the board to a canvas
@@ -22,13 +23,21 @@ const render_game = (game, canvas) => {
   var tick = game.ticks[Math.floor(game.index)];
   var board = kaelin.board_to_json(tick.board);
 
+  var prev_tick = game.ticks[Math.floor(Math.max(game.index - 1, 0))];
+  var prev_board = kaelin.board_to_json(prev_tick.board);
+
   // Finds hero positions
   var hero_pos = {};
+  var prev_hero_pos = {};
   for (var j = 0; j < 16; ++j) {
     for (var i = 0; i < 16; ++i) {
       var unit = board[j * 16 + i];
       if (unit[0] === "Hero") {
         hero_pos[unit[1].hero] = [i,j];
+      }
+      var prev_unit = prev_board[j * 16 + i];
+      if (prev_unit[0] === "Hero") {
+        prev_hero_pos[prev_unit[1].hero] = [i,j];
       }
     }
   }
@@ -57,8 +66,6 @@ const render_game = (game, canvas) => {
   canvas.context.fillStyle = "black";
   canvas.context.fillText(bottom_text, tile_size * 8, tile_size * 16.75);
   canvas.context.fillText(top_text, tile_size * 8, tile_size * 0.25);
-
-
 
   // Draws tiles
   for (var j = 0; j < 16; ++j) {
@@ -144,7 +151,30 @@ const render_game = (game, canvas) => {
             + (unit[1].spec > 0 ? "*" : ""),
             x + 16,
             y + 27);
-          var image = images[kaelin.hero_name[unit[1].hero].toLowerCase()].left[0];
+          var hero = unit[1].hero;
+          var name = kaelin.hero_name[hero];
+          if (name === "Croni") {
+            var delta = now() - (game.begin_anim || 0);
+            if (tick.cast && tick.cast[0] / 4 === hero) {
+              var [px,py] = pos_to_coord(prev_hero_pos[hero]);
+              //var d = Math.sqrt(Math.pow(px - x, 2) + Math.pow(py - y, 2));
+              //console.log("move croni!", px, py, x, y, dx, dy, delta / TICK_TIME);
+              //var x = px + dx * delta / TICK_TIME;
+              //var y = px + dy * delta / TICK_TIME;
+              var x = px + (x - px) * delta / TICK_TIME;
+              var y = py + (y - py) * delta / TICK_TIME;
+              //console.log("has cast", hero, tick.cast);
+              //if (dist(tick.cast[1], [i,j])  === 0) {
+                //console.log("CRONI!", prev_hero_pos[i,j], tick.cast);
+              //}
+              var frames = images[name.toLowerCase()].move.left;
+            } else {
+              var frames = images[name.toLowerCase()].idle.left;
+            }
+            var image = frames[Math.floor(delta * 10) % frames.length];
+          } else {
+            var image = images[name.toLowerCase()].left[0];
+          }
           canvas.context.drawImage(image, x + tile_size * 0.5 - image.width / 2, y + tile_size * 0.5 - image.height / 2);
           break;
       }
@@ -210,6 +240,7 @@ window.onload = () => {
       mouse: [0,0],
       manual: false,
       turn: 0,
+      begin_anim: null,
       my_hero: null,
       my_casts: [null, null, null, null]
     };
@@ -223,6 +254,7 @@ window.onload = () => {
   const add_index = (add) => {
     if (add > 0 && game.index < game.ticks.length - 1) {
       game.index += 1;
+      game.begin_anim = now();
       if (game.index === game.ticks.length - 1) {
         game.manual = false;
         post("Finish your casts. You have " + CAST_TIME + " seconds!", "log_green");
@@ -246,6 +278,7 @@ window.onload = () => {
       }
     } else if (add < 0) {
       game.index = Math.max(game.index + add, 0);
+      game.begin_anim = now();
       game.manual = true;
     }
   };
@@ -267,7 +300,6 @@ window.onload = () => {
       } else {
         game.my_casts[slot] = [game.mouse[0], game.mouse[1]];
       }
-      console.log("hmm", game.my_casts);
     }
 
     // Sends pass-turn command
@@ -306,7 +338,6 @@ window.onload = () => {
     var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
     if (unit[0] === "Hero") {
       game.my_hero = unit[1].hero;
-      console.log("selected", game.my_hero);
       game.my_casts = [null, null, null, null];
     }
     render_game(game, canvas);
@@ -422,16 +453,16 @@ window.onload = () => {
     "------- | ----------------- | ------------------- | -----------------",
     "TOPHORO | Earth_Root*       | Earth_Wall*         | Earth_Rise       ",
     "GONK    | Empathy*          | Revenge*            | Ground_Slam      ",
-    //"STANCI  | Restore*          | Escort*             | Detain*          ",
+    "STANCI  | Restore*          | Escort*             | Detain*          ",
     "ERKOS   | Flame_Ball        | Flame_Wave          | Flame_Nova       ",
     "CRONI   | Shadow_Bond*      | Shadow_Trap*        | Shadow_Flux      ",
-    //"SNARCH  | Ballista*         | Quick_Bolt_0*       | Quick_Bolt_1*    ",
-    //"SIRPIX  | Stealth_Move*     | Stealth_Strike*     | Lockpick         ",
-    //"KENLUA  | Haste*            | Dodge*              | Slash            ",
-    //"FLINA   | Javelin*          | Fly                 | Gust             ",
-    //"ZAGATUR | Wrap*             | Needle              | Summon           ",
-    //"AGDRIS  | Memento*          | Silence*            | Protect*         ",
-    //"MEWRU   | Teleport*         | Psychock            | Imprison         ",
+    "SNARCH  | Ballista*         | Quick_Bolt_0*       | Quick_Bolt_1*    ",
+    "SIRPIX  | Stealth_Move*     | Stealth_Strike*     | Lockpick         ",
+    "KENLUA  | Haste*            | Dodge*              | Slash            ",
+    "FLINA   | Javelin*          | Fly                 | Gust             ",
+    "ZAGATUR | Wrap*             | Needle              | Summon           ",
+    "AGDRIS  | Memento*          | Silence*            | Protect*         ",
+    "MEWRU   | Teleport*         | Psychock            | Imprison         ",
 
   ].join("\n");
   tips_box.innerText = tips;
@@ -443,12 +474,12 @@ window.onload = () => {
       //game.index += 1;
       render_game(game, canvas);
     }
-  }, 1500);
+  }, TICK_TIME * 1000);
 
   // Rendering
   setInterval(() => {
     render_game(game, canvas);
-  }, 250);
+  }, 100);
 
   new_game();
 };

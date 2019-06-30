@@ -1,13 +1,13 @@
 // Image
-const Image = (src, offset, flip) => {
+const Image = (src) => {
   var image = document.createElement("img");
   image.src = "img/" + src;
-  image.onload = () => {
-    if (flip) offset[0] = - offset[0];
-    offset[0] -= image.width * 0.5;
-    offset[1] -= image.height * 0.5;
-  };
-  image.offset = offset;
+  //image.onload = () => {
+    //if (flip) offset[0] = - offset[0];
+    //offset[0] -= image.width * 0.5;
+    //offset[1] -= image.height * 0.5;
+  //};
+  //image.offset = offset;
   //document.body.appendChild(image);
   return image;
 };
@@ -19,62 +19,99 @@ const images = {
   },
   tophoro: {
     left: [
-      Image("heroes/tophoro.png", [250,250], 1),
+      Image("heroes/tophoro.png"),
     ]
   },
   gonk: {
     left: [
-      Image("heroes/gonk.png", [250,250], 1),
+      Image("heroes/gonk.png"),
     ]
   },
   stanci: {
     left: [
-      Image("heroes/stanci.png", [250,250], 1),
+      Image("heroes/stanci.png"),
     ]
   },
   erkos: {
     left: [
-      Image("heroes/erkos.png", [250,250], 1),
+      Image("heroes/erkos.png"),
     ]
   },
   croni: {
-    left: [
-      Image("heroes/croni.png", [250,250], 1),
-    ]
+    idle: {
+      left: [
+        Image("croni/idle/Croni_Idle_00.png"),
+        Image("croni/idle/Croni_Idle_01.png"),
+        Image("croni/idle/Croni_Idle_02.png"),
+        Image("croni/idle/Croni_Idle_03.png"),
+        Image("croni/idle/Croni_Idle_04.png"),
+        Image("croni/idle/Croni_Idle_05.png"),
+        Image("croni/idle/Croni_Idle_06.png"),
+        Image("croni/idle/Croni_Idle_07.png"),
+        Image("croni/idle/Croni_Idle_08.png"),
+        Image("croni/idle/Croni_Idle_09.png"),
+        Image("croni/idle/Croni_Idle_10.png"),
+        Image("croni/idle/Croni_Idle_11.png"),
+        Image("croni/idle/Croni_Idle_12.png"),
+        Image("croni/idle/Croni_Idle_13.png"),
+        Image("croni/idle/Croni_Idle_14.png"),
+        Image("croni/idle/Croni_Idle_15.png"),
+        Image("croni/idle/Croni_Idle_16.png"),
+        Image("croni/idle/Croni_Idle_17.png"),
+        Image("croni/idle/Croni_Idle_18.png"),
+        Image("croni/idle/Croni_Idle_19.png"),
+        Image("croni/idle/Croni_Idle_20.png"),
+        Image("croni/idle/Croni_Idle_21.png"),
+        Image("croni/idle/Croni_Idle_22.png"),
+        Image("croni/idle/Croni_Idle_23.png"),
+      ]
+    },
+    move: {
+      left: [
+        Image("croni/Move_LR/Croni_Move_LR_0.png"),
+        Image("croni/Move_LR/Croni_Move_LR_1.png"),
+        Image("croni/Move_LR/Croni_Move_LR_2.png"),
+        Image("croni/Move_LR/Croni_Move_LR_3.png"),
+        Image("croni/Move_LR/Croni_Move_LR_4.png"),
+        Image("croni/Move_LR/Croni_Move_LR_5.png"),
+        Image("croni/Move_LR/Croni_Move_LR_6.png"),
+        Image("croni/Move_LR/Croni_Move_LR_7.png"),
+      ]
+    }
   },
   snarch: {
     left: [
-      Image("heroes/snarch.png", [250,250], 1),
+      Image("heroes/snarch.png"),
     ]
   },
   sirpix: {
     left: [
-      Image("heroes/sirpix.png", [250,250], 1),
+      Image("heroes/sirpix.png"),
     ]
   },
   kenlua: {
     left: [
-      Image("heroes/kenlua.png", [250,250], 1),
+      Image("heroes/kenlua.png"),
     ]
   },
   flina: {
     left: [
-      Image("heroes/flina.png", [250,250], 1),
+      Image("heroes/flina.png"),
     ]
   },
   zagatur: {
     left: [
-      Image("heroes/zagatur.png", [250,250], 1),
+      Image("heroes/zagatur.png"),
     ]
   },
   agdris: {
     left: [
-      Image("heroes/agdris.png", [250,250], 1),
+      Image("heroes/agdris.png"),
     ]
   },
   mewem: {
     left: [
-      Image("heroes/mewem.png", [250,250], 1),
+      Image("heroes/mewem.png"),
     ]
   },
   //thief: {
