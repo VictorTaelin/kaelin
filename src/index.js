@@ -8,8 +8,8 @@ const Canvas     = require("./canvas.js");
 const kaelin     = require("./kaelin.js");
 const parse_cast = require("./parse_cast.js");
 const dist       = ([ax,ay],[bx,by]) => Math.abs(ax-bx) + Math.abs(ay-by);
-const CAST_TIME  = 5;
-const TICK_TIME  = 1.5;
+const CAST_TIME  = 8;
+const TICK_TIME  = 2.0;
 const now        = () => Date.now() / 1000;
 
 // Renders the board to a canvas
@@ -155,19 +155,18 @@ const render_game = (game, canvas) => {
           var name = kaelin.hero_name[hero];
           if (name === "Croni") {
             var delta = now() - (game.begin_anim || 0);
-            if (tick.cast && tick.cast[0] / 4 === hero) {
+            if (tick.cast && Math.floor(tick.cast[0] / 4) === hero && tick.cast[0] % 4 === 0) {
               var [px,py] = pos_to_coord(prev_hero_pos[hero]);
-              //var d = Math.sqrt(Math.pow(px - x, 2) + Math.pow(py - y, 2));
-              //console.log("move croni!", px, py, x, y, dx, dy, delta / TICK_TIME);
-              //var x = px + dx * delta / TICK_TIME;
-              //var y = px + dy * delta / TICK_TIME;
               var x = px + (x - px) * delta / TICK_TIME;
               var y = py + (y - py) * delta / TICK_TIME;
-              //console.log("has cast", hero, tick.cast);
-              //if (dist(tick.cast[1], [i,j])  === 0) {
-                //console.log("CRONI!", prev_hero_pos[i,j], tick.cast);
-              //}
               var frames = images[name.toLowerCase()].move.left;
+            } else if (tick.cast && Math.floor(tick.cast[0] / 4) === hero && tick.cast[0] % 4 === 3) {
+              var frames = images[name.toLowerCase()].shadow_flux.left;
+              if (delta > 0.7 && delta < 1.8) {
+                var effect = images.effects.shadow_flux[Math.min(Math.floor((delta - 0.7) * 10), 10)];
+                var [tx,ty] = pos_to_coord(tick.cast[1]);
+                canvas.context.drawImage(effect, tx + tile_size * 0.5 - effect.width / 2, ty + tile_size * 0.5 - effect.height / 2);
+              }
             } else {
               var frames = images[name.toLowerCase()].idle.left;
             }

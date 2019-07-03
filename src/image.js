@@ -14,8 +14,23 @@ const Image = (src) => {
 
 // Images
 const images = {
+  effects: {
+    shadow_flux: [
+      Image("effects/shadow_flux/shadow_flux-0.png"),
+      Image("effects/shadow_flux/shadow_flux-1.png"),
+      Image("effects/shadow_flux/shadow_flux-2.png"),
+      Image("effects/shadow_flux/shadow_flux-3.png"),
+      Image("effects/shadow_flux/shadow_flux-4.png"),
+      Image("effects/shadow_flux/shadow_flux-5.png"),
+      Image("effects/shadow_flux/shadow_flux-6.png"),
+      Image("effects/shadow_flux/shadow_flux-7.png"),
+      Image("effects/shadow_flux/shadow_flux-8.png"),
+      Image("effects/shadow_flux/shadow_flux-9.png"),
+      Image("effects/shadow_flux/shadow_flux-10.png"),
+    ]
+  },
   item: {
-    hourglass: Image("item/hourglass.png", [16,16], 1)
+    hourglass: Image("item/hourglass.png")
   },
   tophoro: {
     left: [
@@ -76,6 +91,30 @@ const images = {
         Image("croni/Move_LR/Croni_Move_LR_5.png"),
         Image("croni/Move_LR/Croni_Move_LR_6.png"),
         Image("croni/Move_LR/Croni_Move_LR_7.png"),
+      ]
+    },
+    shadow_flux: {
+      left: [
+        Image("croni/Attack_LR/Croni_Attack_LR_00.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_01.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_02.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_03.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_04.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_05.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_06.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_07.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_08.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_09.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_10.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_11.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_12.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_13.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_14.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_15.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_16.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_17.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_18.png"),
+        Image("croni/Attack_LR/Croni_Attack_LR_19.png"),
       ]
     }
   },
