@@ -8,8 +8,8 @@ const fm = require("formality-core");
 
 const {infs, defs} = fm.core.parse(code);
 const compile      = name => fm.to_js.compile(defs[name], defs);
-const Cons         = compile("Cons");
-const Nil          = compile("Nil");
+const Cons         = compile("Stack.push");
+const Nil          = compile("Stack.new");
 const
   [new_board,
   [cast,
