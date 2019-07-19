@@ -1,7 +1,7 @@
 const fm = require("formality-core");
 
 //try {
-  var code = require("./../../moonad/formality/stdlib/_export_to_webpack_.js");
+  var code = require("./../../formality/stdlib/_export_to_webpack_.js");
 //} catch (e) {
   //var code = require("./../../formality-core/examples/_export_to_node_.js");
 //}

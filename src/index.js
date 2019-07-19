@@ -258,22 +258,7 @@ window.onload = () => {
         game.manual = false;
         post("Finish your casts. You have " + CAST_TIME + " seconds!", "log_green");
         game.casting = now();
-        setTimeout(() => {
-          var serialized = serialize_casts(game);
-          game.my_casts = [null, null, null, null];
-          if (serialized) {
-            ws.send(name + ": " + serialized);
-            post("Sending " + game.casts.length + " casts.", "log_green");
-          } else {
-            post("No casts for now.");
-          }
-          if (name === "SrPx") {
-            setTimeout(() => {
-              ws.send(name + ": /next");
-            }, 1000);
-          }
-          render_game(game, canvas);
-        }, CAST_TIME * 1000);
+        castingTurn(game);
       }
     } else if (add < 0) {
       game.index = Math.max(game.index + add, 0);
@@ -282,8 +267,31 @@ window.onload = () => {
     }
   };
 
+  const castingTurn = (game) => {
+    setTimeout(() => {
+      var serialized = serialize_casts(game);
+      game.my_casts = [null, null, null, null];
+      if (serialized) { 
+        ws.send(name + ": " + serialized);
+        post("Sending " + game.casts.length + " casts.", "log_green");
+      } else {
+        post("No casts for now.");
+      }
+      nextTurn();
+      render_game(game, canvas);
+    }, CAST_TIME * 1000);
+  }
+
+  // TODO: mais de uma pessoa pode dar o /next? 
+  const nextTurn = () => {
+      setTimeout(() => {
+        ws.send(name + ": /next");
+      }, 1000);
+  }
+
   // Keyboard
   document.body.onkeydown = e => {
+
     // Manually controls turns prev/next
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       add_index(e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0);
@@ -302,18 +310,13 @@ window.onload = () => {
     }
 
     // Sends pass-turn command
-    if (e.key === ".") {
-      if (game.index < game.ticks.length - 1) {
-        game.index = game.ticks.length - 1;
-      } else {
-        ws.send(name + ": " + "/next");
-      }
-    }
-
-    // Sends casts
-    //if (e.key === "Enter" || e.key === " ") {
-      //send_casts();
-    //}
+    // if (e.key === ".") {
+    //   if (game.index < game.ticks.length - 1) {
+    //     game.index = game.ticks.length - 1;
+    //   } else {
+    //     ws.send(name + ": " + "/next");
+    //   }
+    // }
 
     // Removes selected
     if (e.key === "Escape") {
@@ -332,12 +335,14 @@ window.onload = () => {
 
   // Selects an unit
   canvas.onclick = e => {
-    // Selects an unit
-    var tick = game.ticks[Math.floor(game.index)];
-    var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
-    if (unit[0] === "Hero") {
-      game.my_hero = unit[1].hero;
-      game.my_casts = [null, null, null, null];
+    // Selects an unit before starting the game
+    if (game.index === 0){
+      var tick = game.ticks[Math.floor(game.index)];
+      var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
+      if (unit[0] === "Hero") {
+        game.my_hero = unit[1].hero;
+        game.my_casts = [null, null, null, null];
+      }
     }
     render_game(game, canvas);
   };
@@ -364,6 +369,8 @@ window.onload = () => {
   const on_message = (line) => {
     var player = line.slice(0, line.indexOf(":"));
     var msg = line.slice(line.indexOf(":") + 2);
+
+    console.log(">> message: "+msg);
 
     post(player + ": " + msg);
 
@@ -412,15 +419,21 @@ window.onload = () => {
     }
 
     if (msg === "$") {
+      console.log("Initiating a new game")
       game.casts = [];
       game.ticks.push([0, "Game begins.", [skill, args], kaelin.new_board]);
       game.turn = 0;
       post("Starting a new game!", "green_log");
     }
-
+    // TODO: the idea is to have a "/finish"
     if (msg === "RESET") {
       new_game();
+      //game.ticks.push([0, "Game finished by user.", [skill, args], kaelin.new_board]);
       chat.innerHTML = "";
+    }
+
+    if (msg === "/ready") {
+      nextTurn();
     }
   }
 

@@ -8,6 +8,8 @@ var online  = 0;
 let clients = {};
 let messages = [];
 
+let finishGameCmd = "/reset";
+
 function post(msg) {
   messages.push(msg);
   for (var id in clients) {
@@ -35,7 +37,7 @@ app.ws("/chat", function(ws, req) {
 
   ws.on("message", function(msg) {
     console.log("Message: " + msg);
-    if (msg.slice(-5) === "RESET") {
+    if (msg.slice(-6) === finishGameCmd) {
       messages = [];
     }
     if (msg.slice(msg.indexOf(":") + 1).length > 0) {
