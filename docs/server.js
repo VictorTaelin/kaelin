@@ -8,8 +8,6 @@ var online  = 0;
 let clients = {};
 let messages = [];
 
-let finishGameCmd = "/reset";
-
 function post(msg) {
   messages.push(msg);
   for (var id in clients) {
@@ -28,6 +26,7 @@ function post(msg) {
 app.ws("/chat", function(ws, req) {
   console.log("New connection. Online: " + (++online) + ".");
 
+  var playersReady = 0;
   const cid = ++next_id;
   clients[cid] = ws;
 
@@ -37,12 +36,29 @@ app.ws("/chat", function(ws, req) {
 
   ws.on("message", function(msg) {
     console.log("Message: " + msg);
-    if (msg.slice(-6) === finishGameCmd) {
-      messages = [];
+    let message = msg.slice(msg.indexOf(":") + 1).split(' ').join('');
+
+    if (message.length > 0) {
+      switch (message) {
+        case "/finish":
+          messages = [];
+          // TODO: stops the game for everyone
+          break; 
+        case "/ready":
+          playersReady++;
+          if (playersReady == online) {
+            console.log(">> Game is ready to start!");
+            // TODO: send message to everyone that the game can start
+            post(msg);
+          } else {
+            post("Waiting for players");
+          }
+        default:
+          post(msg);
+      }
+      
     }
-    if (msg.slice(msg.indexOf(":") + 1).length > 0) {
-      post(msg);
-    }
+    
   });
 
   ws.on("close", function() {

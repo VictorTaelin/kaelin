@@ -32,11 +32,11 @@ const render_game = (game, canvas) => {
   for (var j = 0; j < 16; ++j) {
     for (var i = 0; i < 16; ++i) {
       var unit = board[j * 16 + i];
-      if (unit[0] === "Hero") {
+      if (isHero(unit)) {
         hero_pos[unit[1].hero] = [i,j];
       }
       var prev_unit = prev_board[j * 16 + i];
-      if (prev_unit[0] === "Hero") {
+      if (isHero(prev_unit)) {
         prev_hero_pos[prev_unit[1].hero] = [i,j];
       }
     }
@@ -53,7 +53,6 @@ const render_game = (game, canvas) => {
   canvas.context.fill();
 
   // Renders turn info
-  
   if (game.casting && now() - game.casting < CAST_TIME) {
     var top_text = "Casting in " + (CAST_TIME - (now() - game.casting)).toFixed(2) + " seconds...";
   } else {
@@ -75,11 +74,11 @@ const render_game = (game, canvas) => {
       canvas.context.rect(x, y, tile_size, tile_size);
       var unit = board[j * 16 + i];
 
-      // Highlighst hero walk range
+      // Highlights hero walk range
       if (  game.my_hero
         && hero_pos[game.my_hero]
         && dist([i,j], hero_pos[game.my_hero]) <= 3
-        && (game.casting && now() - game.casting < CAST_TIME)) {
+        && game.casting && now() - game.casting < CAST_TIME) {
         canvas.context.fillStyle = "rgba(64,128,64,0.3)";
         canvas.context.fill();
       }
@@ -87,14 +86,15 @@ const render_game = (game, canvas) => {
       // Highlights target & caster positions
       if (tick.cast) {
         if (dist(tick.cast[1], [i,j]) <= kaelin.get_skill_area(tick.cast[0])) {
-          if (tick.cast[0] % 4 === 0) {
+          if (tick.cast[0] % 4 === 0) { // Moving to position
             canvas.context.fillStyle = "rgba(32,128,128,0.5)";
-          } else {
+          } else { // Skill area       
             canvas.context.fillStyle = "rgba(128,32,32,0.5)";
           }
           canvas.context.fill();
         }
-        if (unit[0] === "Hero" && unit[1].hero === Math.floor(tick.cast[0] / 4)) {
+        // Caster position
+        if (isHero(unit) && unit[1].hero === Math.floor(tick.cast[0] / 4)) {
           canvas.context.fillStyle = "rgba(64,64,64,0.3)";
           canvas.context.fill();
         }
@@ -151,8 +151,8 @@ const render_game = (game, canvas) => {
             + (unit[1].spec > 0 ? "*" : ""),
             x + 16,
             y + 27);
-          var hero = unit[1].hero;
-          var name = kaelin.hero_name[hero];
+          var hero = getHeroCode(unit);
+          var name = getHeroName(hero);
           if (name === "Croni") {
             var delta = now() - (game.begin_anim || 0);
             if (tick.cast && Math.floor(tick.cast[0] / 4) === hero && tick.cast[0] % 4 === 0) {
@@ -180,6 +180,7 @@ const render_game = (game, canvas) => {
     }
   }
 
+  // Mark the tile where casting a skill
   if (game.my_hero !== null) {
     for (var n = 0; n < 4; ++n) {
       if (game.my_casts[n]) {
@@ -195,6 +196,10 @@ const render_game = (game, canvas) => {
       
   }
 };
+
+function isCastingTurn(game) {
+  return game.casting && now() - game.casting < CAST_TIME;
+}
 
 const fm_string_to_string = str => {
   var read_4_chars = n => {
@@ -221,6 +226,18 @@ const serialize_casts = (game) => {
   }
 };
 
+function isHero(unit) {
+  return unit[0] === "Hero";
+}
+
+function getHeroCode(unit) {
+  return unit[1].hero;
+}
+
+function getHeroName(code) {
+  return kaelin.hero_name[code];
+}
+
 window.onload = () => {
 
   // Name
@@ -246,11 +263,8 @@ window.onload = () => {
     render_game(game, canvas);
   };
 
-  // Canvas
-  var canvas = Canvas(tile_size * 16 + 32, tile_size * 16 + 32);
-  document.getElementById("board_box").appendChild(canvas);
-
   const add_index = (add) => {
+    console.log("Add index");
     if (add > 0 && game.index < game.ticks.length - 1) {
       game.index += 1;
       game.begin_anim = now();
@@ -260,7 +274,7 @@ window.onload = () => {
         game.casting = now();
         castingTurn(game);
       }
-    } else if (add < 0) {
+    } else if (add < 0) { // Manually returning to previous state
       game.index = Math.max(game.index + add, 0);
       game.begin_anim = now();
       game.manual = true;
@@ -282,6 +296,13 @@ window.onload = () => {
     }, CAST_TIME * 1000);
   }
 
+
+  // ------
+  // Canvas
+  // ------
+  var canvas = Canvas(tile_size * 16 + 32, tile_size * 16 + 32);
+  document.getElementById("board_box").appendChild(canvas);
+
   // TODO: mais de uma pessoa pode dar o /next? 
   const nextTurn = () => {
       setTimeout(() => {
@@ -289,10 +310,18 @@ window.onload = () => {
       }, 1000);
   }
 
+  function getUnitOnFocus() {
+    var tick = game.ticks[Math.floor(game.index)];
+    var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
+    return unit
+  }
+  
+  // ---------
   // Keyboard
+  // ---------
   document.body.onkeydown = e => {
 
-    // Manually controls turns prev/next
+    // Manually controls turns prev/next    
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       add_index(e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0);
     }
@@ -333,15 +362,19 @@ window.onload = () => {
     game.mouse = [i,j];
   };
 
+  // TODO: adiconar heróis à sessão. 
+
   // Selects an unit
   canvas.onclick = e => {
     // Selects an unit before starting the game
     if (game.index === 0){
-      var tick = game.ticks[Math.floor(game.index)];
-      var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
-      if (unit[0] === "Hero") {
-        game.my_hero = unit[1].hero;
+      // var tick = game.ticks[Math.floor(game.index)];
+      // var unit = kaelin.unit_to_json(kaelin.get_at(game.mouse)(tick.board)[1]);
+      var unit = getUnitOnFocus();
+      if (isHero(unit)) {
+        game.my_hero = getHeroCode(unit);
         game.my_casts = [null, null, null, null];
+        post("Hero selected: "+getHeroName(game.my_hero), "log_green");
       }
     }
     render_game(game, canvas);
@@ -358,13 +391,15 @@ window.onload = () => {
     var msg_el = document.createElement("div");
     msg_el.className = "message " + className;
     msg_el.innerText = msg;
-    if (msg.slice(-5) !== "RESET") {
-      chat.appendChild(msg_el);
-    }
+    // if (msg.slice(-5) !== "RESET") {
+    //   chat.appendChild(msg_el);
+    // }
+    chat.appendChild(msg_el);
     chat_box.scrollTop = chat_box.scrollHeight;
   };
-
+  // --------
   // Messages
+  // --------
   let msgs = [];
   const on_message = (line) => {
     var player = line.slice(0, line.indexOf(":"));
@@ -418,17 +453,19 @@ window.onload = () => {
       render_game(game, canvas);
     }
 
-    if (msg === "$") {
-      console.log("Initiating a new game")
-      game.casts = [];
-      game.ticks.push([0, "Game begins.", [skill, args], kaelin.new_board]);
-      game.turn = 0;
-      post("Starting a new game!", "green_log");
-    }
-    // TODO: the idea is to have a "/finish"
-    if (msg === "RESET") {
+    // if (msg === "$") {
+    //   console.log("Initiating a new game")
+    //   game.casts = [];
+    //   game.ticks.push([0, "Game begins.", [skill, args], kaelin.new_board]);
+    //   game.turn = 0;
+    //   post("Starting a new game!", "green_log");
+    // }
+    
+    // TODO: not working
+    if (msg === "/finish") {
+      console.log("Finish game");
       new_game();
-      //game.ticks.push([0, "Game finished by user.", [skill, args], kaelin.new_board]);
+      game.ticks.push([0, "Game finished by user.", [skill, args], kaelin.new_board]);
       chat.innerHTML = "";
     }
 
@@ -436,13 +473,15 @@ window.onload = () => {
       nextTurn();
     }
   }
-
+  // ----------
   // Connection
+  // ----------
   const ws = new WebSocket("ws://" + location.host + "/chat");
   ws.onopen = function open() {};
   ws.onmessage = (data) => on_message(data.data);
-
+  // ----
   // Chat
+  // ----
   var chat = document.createElement("div");
   var chat_box = document.getElementById("chat_box");
   var input = document.getElementById("input");
