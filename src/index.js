@@ -8,7 +8,7 @@ const Canvas     = require("./canvas.js");
 const kaelin     = require("./kaelin.js");
 const parse_cast = require("./parse_cast.js");
 const dist       = ([ax,ay],[bx,by]) => Math.abs(ax-bx) + Math.abs(ay-by);
-const CAST_TIME  = 3;
+const CAST_TIME  = 8;
 const TICK_TIME  = 2.0;
 const now        = () => Date.now() / 1000;
 
@@ -162,25 +162,24 @@ const render_game = (game, canvas) => {
             var y = py + (y - py) * delta / TICK_TIME;
             var frames = images[name.toLowerCase()].move.left;
             var image = frames[Math.floor(delta * 10) % frames.length];
+          } else if (images[name.toLowerCase()].left !== undefined){ // Heros without animation
+            var image = images[name.toLowerCase()].left[0]; 
           } else {
-            if (images[name.toLowerCase()].left !== undefined){
-              var image = images[name.toLowerCase()].left[0]; 
+            if (name == "Croni") { // Croni is a special case because have some animations
+              if (canHeroAnimateSkill(tick, hero, 3)) {
+                var frames = images[name.toLowerCase()].shadow_flux.left;
+                if (delta > 0.7 && delta < 1.8) {
+                  var effect = images.effects.shadow_flux[Math.min(Math.floor((delta - 0.7) * 10), 10)];
+                  var [tx,ty] = pos_to_coord(tick.cast[1]);
+                  canvas.context.drawImage(effect, tx + tile_size * 0.5 - effect.width / 2, ty + tile_size * 0.5 - effect.height / 2);
+                }          
+              } else {
+                var frames = images[name.toLowerCase()].idle.left;
+              }
+              var image = frames[Math.floor(delta * 10) % frames.length];
             }
           }
 
-          if (name === "Croni") {
-            if (canHeroAnimateSkill(tick, hero, 3)) {
-              var frames = images[name.toLowerCase()].shadow_flux.left;
-              if (delta > 0.7 && delta < 1.8) {
-                var effect = images.effects.shadow_flux[Math.min(Math.floor((delta - 0.7) * 10), 10)];
-                var [tx,ty] = pos_to_coord(tick.cast[1]);
-                canvas.context.drawImage(effect, tx + tile_size * 0.5 - effect.width / 2, ty + tile_size * 0.5 - effect.height / 2);
-              }
-            } else {
-              var frames = images[name.toLowerCase()].idle.left;
-            }
-            var image = frames[Math.floor(delta * 10) % frames.length];
-          }
           canvas.context.drawImage(image, x + tile_size * 0.5 - image.width / 2, y + tile_size * 0.5 - image.height / 2);
           break;
       }
@@ -270,7 +269,7 @@ window.onload = () => {
 
   // State
   var game;
-  function new_game() {
+  function new_game(wait = false) {
     game = {
       index: 0,
       ticks: [{turn: 0, text: "Game begins.", cast: null, board: kaelin.new_board}],
@@ -282,7 +281,11 @@ window.onload = () => {
       my_hero: null,
       my_casts: [null, null, null, null]
     };
-    render_game(game, canvas);
+    if (!wait) {
+      render_game(game, canvas);
+    } else {
+      // TODO: clear timeout
+    }
   };
 
   const add_index = (add) => {
@@ -354,7 +357,9 @@ window.onload = () => {
       if (game.my_casts[slot] && dist(game.my_casts[slot], game.mouse) === 0) {
         game.my_casts[slot] = null;
       } else {
-        game.my_casts[slot] = [game.mouse[0], game.mouse[1]];
+        if (document.activeElement.id !== "input"){
+          game.my_casts[slot] = [game.mouse[0], game.mouse[1]];
+        }
       }
     }
 
@@ -457,27 +462,21 @@ window.onload = () => {
       post("Completed turn " + game.turn + " with " + game.casts.length + " casts!", "green_log");
       ++game.turn;
       game.casts = [];
-      //render_game(game, canvas);
     }
-
-    // if (msg === "$") {
-    //   console.log("Initiating a new game")
-    //   game.casts = [];
-    //   game.ticks.push([0, "Game begins.", [skill, args], kaelin.new_board]);
-    //   game.turn = 0;
-    //   post("Starting a new game!", "green_log");
-    // }
     
     // TODO: not working
+    console.log("Message: "+msg);
     if (msg === "/finish") {
       console.log("Finish game");
-      new_game();
+      new_game(true);
       game.ticks.push([0, "Game finished by user.", [skill, args], kaelin.new_board]);
       chat.innerHTML = "";
     }
 
+    // TODO: the game only begins after everybody is ready
     if (msg === "/ready") {
-      nextTurn();
+      console.log("READY!");
+      // nextTurn();
     }
   }
   // ----------

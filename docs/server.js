@@ -37,7 +37,6 @@ app.ws("/chat", function(ws, req) {
   ws.on("message", function(msg) {
     console.log("Message: " + msg);
     let message = msg.slice(msg.indexOf(":") + 1).split(' ').join('');
-
     if (message.length > 0) {
       switch (message) {
         case "/finish":
@@ -48,15 +47,17 @@ app.ws("/chat", function(ws, req) {
           playersReady++;
           if (playersReady == online) {
             console.log(">> Game is ready to start!");
+            post("[Kaelin]: Brace yourself, the game is beginning now!")
             // TODO: send message to everyone that the game can start
-            post(msg);
+            post("[Kaelin]: /next");
           } else {
-            post("Waiting for players");
+            var remainingPlayers = online - playersReady;
+            post("[Kaelin]: a player is ready for battle. Waiting for others "+remainingPlayers);
           }
         default:
           post(msg);
       }
-      
+      // post(msg);
     }
     
   });
